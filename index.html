@@ -1,749 +1,432 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080a09">
 <title>face.ai — Facial Motion Lab</title>
-
 <style>
-:root {
-  --bg:#080a09;
-  --panel:#101411;
-  --line:#242c25;
-  --green:#42e875;
-  --text:#f2f5f2;
-  --muted:#879188;
-}
-*{box-sizing:border-box}
-body {
-  margin:0;background:var(--bg);color:var(--text);
-  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  min-height:100vh;
-}
-button{font:inherit;cursor:pointer}
-button:focus-visible{outline:2px solid var(--green);outline-offset:4px}
-button:disabled{opacity:.4;cursor:not-allowed}
-.screen{display:none;min-height:100vh}
-.screen.active{display:flex}
-#welcome,#calibration{align-items:center;justify-content:center;padding:24px}
-.center{width:min(450px,100%);text-align:center}
-.logo{
-  width:64px;height:64px;margin:0 auto 23px;display:grid;place-items:center;
-  border:1px solid #31543a;border-radius:21px;background:#122017;
-  color:var(--green);font-size:28px;
-}
-.brand{font-size:25px;font-weight:700;letter-spacing:-1px}
-.brand span{color:var(--green)}
-.muted{color:var(--muted);font-size:12px;line-height:1.8}
-.primary{
-  width:100%;padding:15px;border:0;border-radius:12px;
-  background:var(--green);color:#071109;font-weight:750;margin-top:22px;
-}
-.primary:hover:not(:disabled){background:#66f58f}
-.secondary{
-  padding:10px 13px;border:1px solid var(--line);
-  background:#131713;color:var(--text);border-radius:9px;font-size:11px;
-}
-.camera-circle{
-  width:190px;height:190px;margin:0 auto 25px;position:relative;
-}
-#calibrationVideo{
-  width:100%;height:100%;object-fit:cover;transform:scaleX(-1);
-  border-radius:50%;border:1px solid #31543a;background:#111;
-}
-.circle-ring{
-  position:absolute;inset:-5px;border:1px solid #42e87555;
-  border-radius:50%;pointer-events:none;
-}
-.eyebrow{font-size:10px;letter-spacing:2px;color:var(--green);margin-bottom:14px}
-h1{font-size:27px;letter-spacing:-1px;margin:0 0 12px}
-.progress{height:3px;background:#252d26;border-radius:8px;margin-top:22px;overflow:hidden}
-#progressFill{height:100%;width:0;background:var(--green);transition:width .2s}
-#calStatus{font-size:11px;color:var(--green);margin-top:13px;min-height:17px}
-.steps{display:flex;justify-content:center;gap:9px;margin-top:20px}
-.step{width:8px;height:8px;border-radius:50%;background:#303830}
-.step.done{background:var(--green)}
-.step.current{outline:3px solid #42e87525;background:var(--green)}
-.cal-actions{display:flex;gap:10px;margin-top:20px}
-.cal-actions button{margin:0}
-.cal-actions .primary{flex:1}
-#app{flex-direction:column;padding:0 30px 22px}
-header{
-  height:65px;display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid var(--line);gap:12px;
-}
-header .brand{font-size:17px}
-.status{font-size:11px;color:var(--muted)}
-.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:8px}
-.layout{
-  width:min(1450px,100%);margin:auto;padding:25px 0;
-  display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:18px;
-  align-content:center;flex:1;
-}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;overflow:hidden}
-.heading{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--line)}
-.heading strong{font-size:12px}
-.heading span{font-size:10px;color:var(--green)}
-.stage{position:relative;background:#050706;aspect-ratio:16/10;overflow:hidden}
-#video{width:100%;height:100%;position:absolute;inset:0;object-fit:contain;transform:scaleX(-1)}
-#mesh{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.stage-label{
-  position:absolute;bottom:13px;left:13px;background:#080a09d9;
-  border:1px solid #ffffff14;padding:9px 11px;border-radius:8px;
-  color:#d6e2d8;font-size:10px;pointer-events:none;
-}
-.controls{display:flex;gap:8px;flex-wrap:wrap;padding:13px}
-.side{display:flex;flex-direction:column;gap:14px}
-.card{padding:17px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
-.card h2{font-size:12px;margin:0 0 18px}
-.bigEmotion{font-size:24px;color:var(--green);font-weight:650}
-.conf{font-size:10px;color:var(--muted);margin-top:7px}
-.emotion{margin-top:17px}
-.emotionTop{display:flex;justify-content:space-between;font-size:11px;margin-bottom:7px}
-.emotionTop span:last-child{color:var(--muted)}
-.bar{height:3px;background:#2b332c;border-radius:10px;overflow:hidden}
-.fill{height:100%;background:var(--green);width:0%;transition:width .2s}
-.note{font-size:10px;line-height:1.8;color:var(--muted)}
-@media(max-width:850px){
-  #app{padding:0 14px 20px}
-  .layout{grid-template-columns:1fr;align-content:start}
-  .side{display:grid;grid-template-columns:1fr 1fr}
-  .note{grid-column:1/-1}
-}
-@media(max-width:520px){
-  .side{display:flex}
-  .stage{aspect-ratio:4/3}
-  .controls{gap:6px}
-  .secondary{padding:9px}
-  .status{font-size:9px}
-}
+.mode-grid{display:grid;grid-template-columns:1fr;gap:11px;margin-top:25px;text-align:left}
+.mode-card{position:relative;display:grid;grid-template-columns:42px 1fr;column-gap:12px;align-items:center;width:100%;padding:17px;border:1px solid #28342a;border-radius:14px;background:linear-gradient(135deg,#121914,#0d100e);color:var(--text);text-align:left;transition:border-color .2s,transform .2s}
+.mode-card:hover{border-color:var(--green);transform:translateY(-2px)}
+.mode-icon{grid-row:span 2;width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:#193021;color:var(--green);font-size:22px}
+.mode-card strong{font-size:13px}.mode-card small{font-size:10px;line-height:1.5;color:var(--muted);margin-top:5px}.mode-arrow{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--green);font-size:18px}
+#people{align-items:center;justify-content:center;padding:24px}.people-center{width:min(1000px,100%);max-width:1000px}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px auto;max-width:460px}
+.profile-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px;border:1px solid var(--line);border-radius:13px;background:var(--panel)}
+.profile-photo{width:76px;height:76px;object-fit:cover;border-radius:50%;border:1px solid #31543a;background:#111}
+.profile-card strong{font-size:13px}.profile-card small{font-size:10px;color:var(--muted)}
+.people-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0 10px;text-align:left}
+.people-stage{position:relative;width:100%;aspect-ratio:16/9;max-height:62vh;background:#050706;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.people-stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scaleX(-1)}
+#peopleOverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.people-status{font-size:11px;color:var(--green);line-height:1.6;text-align:left}
+@media(max-width:600px){.people-stage{aspect-ratio:4/3}.people-toolbar{align-items:flex-start;flex-direction:column}}
+:root{--bg:#080a09;--panel:#101411;--line:#242c25;--green:#42e875;--text:#f2f5f2;--muted:#879188}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid var(--green);outline-offset:4px}button:disabled{opacity:.42;cursor:not-allowed}
+.screen{display:none;min-height:100vh}.screen.active{display:flex}#welcome,#calibration{align-items:center;justify-content:center;padding:24px}.center{width:min(460px,100%);text-align:center}
+.logo{width:64px;height:64px;margin:0 auto 23px;display:grid;place-items:center;border:1px solid #31543a;border-radius:21px;background:#122017;color:var(--green);font-size:28px}
+.brand{font-size:25px;font-weight:700;letter-spacing:-1px}.brand span{color:var(--green)}.muted{color:var(--muted);font-size:12px;line-height:1.8}
+.primary{width:100%;padding:15px;border:0;border-radius:12px;background:var(--green);color:#071109;font-weight:750;margin-top:22px}.primary:hover:not(:disabled){background:#66f58f}
+.secondary{padding:10px 13px;border:1px solid var(--line);background:#131713;color:var(--text);border-radius:9px;font-size:11px}
+.camera-circle{width:190px;height:190px;margin:0 auto 25px;position:relative}.camera-circle video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);border-radius:50%;border:1px solid #31543a;background:#111}
+.circle-ring{position:absolute;inset:-5px;border:1px solid #42e87555;border-radius:50%;pointer-events:none}
+.eyebrow{font-size:10px;letter-spacing:2px;color:var(--green);margin-bottom:14px}h1{font-size:27px;letter-spacing:-1px;margin:0 0 12px}
+.progress{height:3px;background:#252d26;border-radius:8px;margin-top:22px;overflow:hidden}#progressFill{height:100%;width:0;background:var(--green);transition:width .2s}
+#calStatus{font-size:11px;color:var(--green);margin-top:13px;min-height:17px}.steps{display:flex;justify-content:center;gap:9px;margin-top:20px}.step{width:8px;height:8px;border-radius:50%;background:#303830}.step.done{background:var(--green)}.step.current{outline:3px solid #42e87525;background:var(--green)}
+.cal-actions{display:flex;gap:10px;margin-top:20px}.cal-actions button{margin:0}.cal-actions .primary{flex:1}
+#app{flex-direction:column;padding:0 30px 22px}header{height:65px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);gap:12px}header .brand{font-size:17px}
+.status{font-size:11px;color:var(--muted)}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:8px}
+.layout{width:min(1450px,100%);margin:auto;padding:25px 0;display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:18px;align-content:center;flex:1}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;overflow:hidden}.heading{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--line)}.heading strong{font-size:12px}.heading span{font-size:10px;color:var(--green)}
+.stage{position:relative;background:#050706;aspect-ratio:16/10;overflow:hidden}.stage video{width:100%;height:100%;position:absolute;inset:0;object-fit:contain;transform:scaleX(-1)}#mesh{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.stage-label{position:absolute;bottom:13px;left:13px;background:#080a09d9;border:1px solid #ffffff14;padding:9px 11px;border-radius:8px;color:#d6e2d8;font-size:10px;pointer-events:none}
+.controls{display:flex;gap:8px;flex-wrap:wrap;padding:13px}.side{display:flex;flex-direction:column;gap:14px}.card{padding:17px;background:var(--panel);border:1px solid var(--line);border-radius:14px}.card h2{font-size:12px;margin:0 0 18px}
+.bigEmotion{font-size:24px;color:var(--green);font-weight:650}.conf{font-size:10px;color:var(--muted);margin-top:7px}.emotion{margin-top:17px}.emotionTop{display:flex;justify-content:space-between;font-size:11px;margin-bottom:7px}.emotionTop span:last-child{color:var(--muted)}
+.bar{height:3px;background:#2b332c;border-radius:10px;overflow:hidden}.fill{height:100%;background:var(--green);width:0%;transition:width .2s}.note{font-size:10px;line-height:1.8;color:var(--muted)}
+@media(max-width:850px){#app{padding:0 14px 20px}.layout{grid-template-columns:1fr;align-content:start}.side{display:grid;grid-template-columns:1fr 1fr}.note{grid-column:1/-1}}
+@media(max-width:520px){.side{display:flex}.stage{aspect-ratio:4/3}.controls{gap:6px}.secondary{padding:9px}.status{font-size:9px}}
 </style>
 </head>
-
 <body>
+<section id="welcome" class="screen active"><div class="center">
+<div class="logo">⌁</div><div class="brand">face<span>.</span>ai</div>
+<p class="muted">Выбери, что хочешь анализировать</p>
+<div class="mode-grid">
+<button class="mode-card" id="startEmotion"><span class="mode-icon">◉</span><strong>Определение эмоций</strong><small>Сетка лица и проценты выражений</small><span class="mode-arrow">→</span></button>
+<button class="mode-card" id="openPeople"><span class="mode-icon">⌘</span><strong>Определение людей</strong><small>Распознавание Алисы и Матвея</small><span class="mode-arrow">→</span></button>
+</div>
+<p class="muted">Камера включится после выбора режима.<br>Видео обрабатывается в браузере.</p>
+</div></section>
 
-<section id="welcome" class="screen active">
-  <div class="center">
-    <div class="logo">⌁</div>
-    <div class="brand">face<span>.</span>ai</div>
-    <p class="muted">
-      Facial Motion Lab<br>
-      Калибровка лица и анализ выражений
-    </p>
-    <button class="primary" id="start">Начать калибровку</button>
-    <p class="muted">Камера включится после нажатия.<br>Видео анализируется в браузере.</p>
-  </div>
-</section>
+<section id="people" class="screen"><div class="center people-center">
+<div class="logo">⌘</div><div class="brand">face<span>.</span>ai</div>
+<div class="eyebrow">РАСПОЗНАВАНИЕ ЛЮДЕЙ</div>
+<h1>Алиса и Матвей</h1>
+<p class="muted">Режим людей будет подключён после того, как ты загрузишь фотографии в GitHub. Сами фотографии показывать на странице можно уже сейчас, но для распознавания нужно дополнительно сравнивать признаки лиц.</p>
+<div class="profile-grid">
+<div class="profile-card"><img class="profile-photo" id="alisaPhoto" src="./alisa.jpg" alt="Фото Алисы"><strong>Алиса</strong><small>alisa.jpg</small></div>
+<div class="profile-card"><img class="profile-photo" id="matveyPhoto" src="./matvey.jpg" alt="Фото Матвея"><strong>Матвей</strong><small>matvey.jpg</small></div>
+</div>
+<div class="people-toolbar"><div class="people-status" id="peopleStatus">Нажми «Запустить распознавание» и разреши доступ к камере.</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="secondary" id="stopPeople" hidden>Остановить</button><button class="secondary" id="backHome">← Назад</button><button class="primary" id="startPeople" style="width:auto;margin:0;padding:11px 14px">Запустить распознавание</button></div></div>
+<div class="people-stage" id="peopleStage" hidden><video id="peopleVideo" autoplay playsinline muted></video><canvas id="peopleOverlay"></canvas></div>
+<p class="muted">Распознавание выполняется в браузере. Для более точного результата нужны чёткие фотографии лица анфас и хорошее освещение.</p>
+</div></section>
 
-<section id="calibration" class="screen">
-  <div class="center">
-    <div class="eyebrow" id="calStep">ПОДГОТОВКА</div>
-
-    <div class="camera-circle">
-      <video id="calibrationVideo" autoplay playsinline muted></video>
-      <div class="circle-ring"></div>
-    </div>
-
-    <h1 id="calTitle">Подключение камеры</h1>
-    <p class="muted" id="calDescription">
-      Сначала подключим камеру и подготовим систему.
-    </p>
-
-    <div class="progress"><div id="progressFill"></div></div>
-    <div id="calStatus" aria-live="polite">Ожидание…</div>
-
-    <div class="steps" id="steps">
-      <i class="step current"></i><i class="step"></i><i class="step"></i>
-      <i class="step"></i><i class="step"></i>
-    </div>
-
-    <div class="cal-actions">
-      <button class="secondary" id="cancel">Отмена</button>
-      <button class="primary" id="next" disabled>Далее →</button>
-    </div>
-    <p class="muted" style="font-size:10px">
-      Сохраняй выражение, пока не нажмёшь «Далее».
-    </p>
-  </div>
-</section>
+<section id="calibration" class="screen"><div class="center">
+<div class="eyebrow" id="calStep">ПОДГОТОВКА</div>
+<div class="camera-circle"><video id="calVideo" autoplay playsinline muted></video><div class="circle-ring"></div></div>
+<h1 id="calTitle">Подключение камеры</h1>
+<p class="muted" id="calDescription">Сначала подключим камеру и подготовим модель.</p>
+<div class="progress"><div id="progressFill"></div></div>
+<div id="calStatus" aria-live="polite">Ожидание…</div>
+<div class="steps" id="steps"><i class="step current"></i><i class="step"></i><i class="step"></i><i class="step"></i><i class="step"></i></div>
+<div class="cal-actions"><button class="secondary" id="cancel">Отмена</button><button class="primary" id="next" disabled>Далее →</button></div>
+<p class="muted" style="font-size:10px">Сделай выражение и нажми «Далее», когда будешь готов.</p>
+</div></section>
 
 <section id="app" class="screen">
-  <header>
-    <div class="brand">face<span>.</span>ai</div>
-    <div class="status"><i class="dot"></i><span id="status">Система активна</span></div>
-  </header>
-
-  <main class="layout">
-    <section class="panel">
-      <div class="heading">
-        <strong>Facial landmark tracking</strong>
-        <span id="faceStatus">ПОИСК ЛИЦА</span>
-      </div>
-
-      <div class="stage">
-        <video id="video" autoplay playsinline muted></video>
-        <canvas id="mesh"></canvas>
-        <div class="stage-label" id="meshLabel">Ожидание лица</div>
-      </div>
-
-      <div class="controls">
-        <button class="secondary" id="recalibrate">↻ Повторить калибровку</button>
-        <button class="secondary" id="meshToggle">Скрыть сетку</button>
-        <button class="secondary" id="stop">Выключить камеру</button>
-      </div>
-    </section>
-
-    <aside class="side">
-      <section class="card">
-        <h2>Выражение лица</h2>
-        <div class="bigEmotion" id="mainEmotion">—</div>
-        <div class="conf" id="mainConf">Ожидание данных</div>
-        <div id="emotionList"></div>
-      </section>
-
-      <section class="card">
-        <h2>Калибровка</h2>
-        <div class="bigEmotion" style="font-size:15px" id="calResult">Не выполнена</div>
-        <p class="note" id="calInfo">Необходимо пройти пять этапов.</p>
-      </section>
-
-      <p class="note">
-        Сетка показывает геометрию лица. Оценки выражений приблизительны
-        и не позволяют достоверно определить истинные чувства человека.
-      </p>
-    </aside>
-  </main>
+<header><div class="brand">face<span>.</span>ai</div><div class="status"><i class="dot"></i><span id="status">Система активна</span></div></header>
+<main class="layout">
+<section class="panel">
+<div class="heading"><strong>Facial landmark tracking</strong><span id="faceStatus">ПОИСК ЛИЦА</span></div>
+<div class="stage"><video id="video" autoplay playsinline muted></video><canvas id="mesh"></canvas><div class="stage-label" id="meshLabel">Ожидание лица</div></div>
+<div class="controls"><button class="secondary" id="recalibrate">↻ Повторить калибровку</button><button class="secondary" id="meshToggle">Скрыть сетку</button><button class="secondary" id="stop">Выключить камеру</button></div>
 </section>
-
-<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+<aside class="side">
+<section class="card"><h2>Показатели выражений</h2><div class="conf" id="mainConf">Проценты сглаживаются, порядок не меняется</div><div id="emotionList"></div></section>
+<section class="card"><h2>Калибровка</h2><div class="bigEmotion" style="font-size:15px" id="calResult">Не выполнена</div><p class="note" id="calInfo">Необходимо пройти пять этапов.</p></section>
+<p class="note">Сетка строится MediaPipe. Оценки выражений приблизительные и не определяют истинные чувства человека.</p>
+</aside>
+</main></section>
 
 <script type="module">
-import {
-  FaceLandmarker,
-  FilesetResolver
-} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+import {FaceLandmarker, FilesetResolver} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+import * as faceapi from "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.esm.js";
 
-const $ = id => document.getElementById(id);
+const $=id=>document.getElementById(id);
+const screens=["welcome","people","calibration","app"];
+const calVideo=$("calVideo"), video=$("video"), canvas=$("mesh"), ctx=canvas.getContext("2d");
 
-const screens = ["welcome","calibration","app"];
-const camCal = $("calibrationVideo");
-const video = $("video");
-const canvas = $("mesh");
-const ctx = canvas.getContext("2d");
-
-const labels = {
-  neutral:"Нейтрально",
-  happy:"Радость",
-  sad:"Грусть",
-  angry:"Злость",
-  surprised:"Удивление",
-  fearful:"Страх",
-  disgusted:"Отвращение"
-};
-
-const sequence = [
-  {
-    title:"Нейтральное лицо",
-    description:"Расслабь мышцы лица, смотри прямо в камеру и не улыбайся. Когда будешь готов, нажми «Далее».",
-    key:"neutral"
-  },
-  {
-    title:"Улыбка",
-    description:"Улыбнись естественно и удерживай улыбку. Нажми «Далее», когда будешь готов.",
-    key:"happy"
-  },
-  {
-    title:"Удивление",
-    description:"Подними брови и широко открой глаза. Удерживай выражение и нажми «Далее».",
-    key:"surprised"
-  },
-  {
-    title:"Грусть",
-    description:"Изобрази грустное выражение лица. Когда закончишь, нажми «Далее».",
-    key:"sad"
-  },
-  {
-    title:"Злость",
-    description:"Нахмурь брови и изобрази сердитое выражение. Затем нажми «Завершить».",
-    key:"angry"
-  }
+const steps=[
+ {key:"neutral",title:"Нейтральное лицо",description:"Расслабь лицо и смотри прямо в камеру."},
+ {key:"happy",title:"Улыбка",description:"Улыбнись естественно и удерживай улыбку."},
+ {key:"surprised",title:"Удивление",description:"Подними брови и широко открой глаза."},
+ {key:"sad",title:"Грусть",description:"Изобрази грустное выражение лица."},
+ {key:"angry",title:"Злость",description:"Нахмурь брови и изобрази сердитое выражение."}
 ];
+const expressionNames={neutral:"Нейтрально",happy:"Радость",sad:"Грусть",angry:"Злость",surprised:"Удивление",fearful:"Страх",disgusted:"Отвращение"};
+let stream=null, landmarker=null, generation=0, timer=null, running=false, busy=false, showMesh=true;
+let currentStep=0, calibrationData=[], lastVideoTime=-1;
+let smoothedScores=null;
+const emotionOrder=["neutral","happy","sad","angry","surprised","fearful","disgusted"];
+const smoothingStrength=0.18; // меньше значение = более плавные, но медленнее меняющиеся проценты
 
-let stream = null;
-let landmarker = null;
-let running = false;
-let busy = false;
-let showMesh = true;
-let generation = 0;
-let timer = null;
-let lastVideoTime = -1;
-let currentStep = 0;
-let calibrationData = [];
-let neutralReference = null;
-let expressionDetectorReady = false;
-let stageReady = false;
 
-function show(id) {
-  screens.forEach(s => $(s).classList.toggle("active",s===id));
+function show(id){screens.forEach(s=>$(s).classList.toggle("active",s===id))}
+function status(text){$("calStatus").textContent=text}
+function updateSteps(index){[...$("steps").children].forEach((el,i)=>el.className="step"+(i<index?" done":i===index?" current":""))}
+
+async function openCamera(){
+ if(!navigator.mediaDevices?.getUserMedia) throw new Error("Камера доступна только через HTTPS или localhost.");
+ stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}}});
+ calVideo.srcObject=stream;video.srcObject=stream;
+ await Promise.all([waitVideo(calVideo),waitVideo(video)]);
+ await Promise.all([calVideo.play(),video.play()]);
 }
-
-function setStatus(text) {
-  $("calStatus").textContent = text;
+function waitVideo(el){
+ return new Promise((resolve,reject)=>{
+  if(el.readyState>=2&&el.videoWidth)return resolve();
+  const timeout=setTimeout(()=>{clean();reject(new Error("Камера не передала изображение за 15 секунд."))},15000);
+  function clean(){clearTimeout(timeout);el.removeEventListener("loadeddata",ok);el.removeEventListener("error",bad)}
+  function ok(){clean();resolve()} function bad(){clean();reject(new Error("Ошибка видеопотока камеры."))}
+  el.addEventListener("loadeddata",ok,{once:true});el.addEventListener("error",bad,{once:true});
+ });
 }
-
-function updateSteps(index) {
-  [...$("steps").children].forEach((el,i)=>{
-    el.className="step"+(i<index?" done":i===index?" current":"");
-  });
+async function loadModel(){
+ if(landmarker)return;
+ status("Загружаем MediaPipe Face Landmarker…");
+ const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+ const opts={baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",delegate:"GPU"},runningMode:"VIDEO",numFaces:1,outputFaceBlendshapes:true,minFaceDetectionConfidence:.35,minFacePresenceConfidence:.35,minTrackingConfidence:.35};
+ try{landmarker=await FaceLandmarker.createFromOptions(vision,opts)}
+ catch(e){console.warn("GPU не запустился, пробуем CPU",e);opts.baseOptions.delegate="CPU";landmarker=await FaceLandmarker.createFromOptions(vision,opts)}
 }
-
-function stopStream() {
-  if(stream) {
-    stream.getTracks().forEach(track=>track.stop());
-    stream=null;
+async function start(){
+ const id=++generation;$("startEmotion").disabled=true;show("calibration");
+ $("calTitle").textContent="Подключение камеры";$("calDescription").textContent="Разреши доступ к камере.";status("Открываем камеру…");
+ try{
+  await openCamera();if(id!==generation)return;
+  $("calTitle").textContent="Загрузка AI";$("calDescription").textContent="Загружаем модель лица и сетки.";await loadModel();if(id!==generation)return;
+  currentStep=0;calibrationData=[];smoothedScores=null;beginStep();
+ }catch(e){console.error(e);stopAll();show("welcome");alert("Не удалось запустить Face AI:\n"+e.message+"\n\nПроверь доступ к камере и интернет.");}
+ finally{$("startEmotion").disabled=false}
+}
+function beginStep(){
+ if(currentStep>=steps.length){finishCalibration();return}
+ const s=steps[currentStep];$("calStep").textContent=`ЭТАП ${String(currentStep+1).padStart(2,"0")} / 05`;
+ $("calTitle").textContent=s.title;$("calDescription").textContent=s.description;
+ $("progressFill").style.width="0%";$("next").disabled=true;
+ $("next").textContent=currentStep===steps.length-1?"Завершить ✓":"Далее →";
+ updateSteps(currentStep);status("Ищем лицо…");checkFace(generation);
+}
+function getResult(el){
+ // MediaPipe — единая модель и для поиска лица, и для сетки.
+ return landmarker.detectForVideo(el,performance.now());
+}
+async function checkFace(id){
+ if(id!==generation||!stream||!landmarker)return;
+ try{
+  const result=getResult(calVideo),found=!!result.faceLandmarks?.length;
+  if(found){$("next").disabled=false;status("✓ Лицо найдено. Нажми «Далее», когда будешь готов.");$("progressFill").style.width="100%"}
+  else{$("next").disabled=true;status("Лицо не найдено — смотри прямо в камеру.");$("progressFill").style.width="0%"}
+ }catch(e){console.error(e);status("Ошибка анализа. Подробности в F12 → Console.");$("next").disabled=true}
+ if(id===generation&&stream)timer=setTimeout(()=>checkFace(id),350);
+}
+function blendshapeMap(result){
+ const out={};
+ const cats=result.faceBlendshapes?.[0]?.categories||[];
+ for(const c of cats)out[c.categoryName]=c.score;
+ return out;
+}
+async function nextStep(){
+ if(!stream||!landmarker||$("next").disabled||busy)return;
+ busy=true;const id=generation;$("next").disabled=true;status("Сохраняем образец…");
+ try{
+  const collected=[];
+  for(let i=0;i<5;i++){
+   if(id!==generation||!stream)return;
+   const result=getResult(calVideo);
+   if(result.faceLandmarks?.length)collected.push({blendshapes:blendshapeMap(result),landmarks:result.faceLandmarks[0]});
+   if(i<4)await new Promise(r=>setTimeout(r,100));
   }
-  video.srcObject=null;
-  camCal.srcObject=null;
-}
-
-function waitForVideo(el) {
-  return new Promise((resolve,reject)=>{
-    if(el.readyState>=2 && el.videoWidth) {
-      resolve();
-      return;
-    }
-
-    const timeout=setTimeout(()=>{
-      cleanup();
-      reject(new Error("Тайм-аут ожидания камеры."));
-    },15000);
-
-    function cleanup() {
-      clearTimeout(timeout);
-      el.removeEventListener("loadeddata",onLoad);
-      el.removeEventListener("error",onError);
-    }
-
-    function onLoad(){cleanup();resolve();}
-    function onError(){cleanup();reject(new Error("Не удалось получить изображение камеры."));}
-
-    el.addEventListener("loadeddata",onLoad,{once:true});
-    el.addEventListener("error",onError,{once:true});
-  });
-}
-
-async function openCamera() {
-  if(!navigator.mediaDevices?.getUserMedia) {
-    throw new Error("Открой сайт через HTTPS или localhost.");
-  }
-
-  stream=await navigator.mediaDevices.getUserMedia({
-    audio:false,
-    video:{
-      facingMode:"user",
-      width:{ideal:1280},
-      height:{ideal:720}
-    }
-  });
-
-  camCal.srcObject=stream;
-  video.srcObject=stream;
-
-  await Promise.all([waitForVideo(camCal),waitForVideo(video)]);
-  await Promise.all([camCal.play(),video.play()]);
-}
-
-async function loadModels() {
-  if(landmarker && expressionDetectorReady) return;
-
-  setStatus("Загрузка модели сетки лица…");
-
-  const vision=await FilesetResolver.forVisionTasks(
-    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
-  );
-
-  const options={
-    baseOptions:{
-      modelAssetPath:
-        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-      delegate:"GPU"
-    },
-    runningMode:"VIDEO",
-    numFaces:1,
-    outputFaceBlendshapes:true
-  };
-
-  try {
-    landmarker=await FaceLandmarker.createFromOptions(vision,options);
-  } catch(error) {
-    console.warn("GPU недоступен, переключаемся на CPU",error);
-    options.baseOptions.delegate="CPU";
-    landmarker=await FaceLandmarker.createFromOptions(vision,options);
-  }
-
-  setStatus("Загрузка модели выражений…");
-
-  await Promise.all([
-    faceapi.nets.tinyFaceDetector.loadFromUri(
-      "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/"
-    ),
-    faceapi.nets.faceExpressionNet.loadFromUri(
-      "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/"
-    )
-  ]);
-
-  expressionDetectorReady=true;
-}
-
-async function start() {
-  if(stageReady) return;
-
-  const id=++generation;
-  $("start").disabled=true;
-  show("calibration");
-
-  $("calTitle").textContent="Подключение камеры";
-  $("calDescription").textContent="Разреши доступ к камере.";
-  $("next").disabled=true;
-  setStatus("Открываем камеру…");
-
-  try {
-    // Камера открывается первой.
-    await openCamera();
-    if(id!==generation) return;
-
-    $("calTitle").textContent="Подготовка AI";
-    $("calDescription").textContent="Загружаем модели распознавания.";
-    setStatus("Загружаем модели…");
-
-    await loadModels();
-    if(id!==generation) return;
-
-    stageReady=true;
-    currentStep=0;
-    calibrationData=[];
-    beginStep();
-  } catch(error) {
-    console.error(error);
-    stopAll();
-    show("welcome");
-    alert(
-      "Не удалось запустить Face AI.\n\n"+
-      error.message+
-      "\n\nПроверь доступ к камере и подключение к интернету."
-    );
-  } finally {
-    $("start").disabled=false;
-  }
-}
-
-function beginStep() {
-  if(currentStep>=sequence.length) {
-    finishCalibration();
-    return;
-  }
-
-  const step=sequence[currentStep];
-
-  $("calStep").textContent=
-    `ЭТАП ${String(currentStep+1).padStart(2,"0")} / 05`;
-  $("calTitle").textContent=step.title;
-  $("calDescription").textContent=step.description;
-  $("progressFill").style.width="0%";
-
-  $("next").textContent=
-    currentStep===sequence.length-1 ? "Завершить ✓" : "Далее →";
-  $("next").disabled=true;
-
-  updateSteps(currentStep);
-  setStatus("Проверяем наличие лица…");
-
-  // На каждом этапе пользователь сам решает, когда продолжить.
-  checkFace(generation);
-}
-
-async function detectExpression(input) {
-  return faceapi
-    .detectSingleFace(
-      input,
-      new faceapi.TinyFaceDetectorOptions({
-        inputSize:320,
-        scoreThreshold:0.4
-      })
-    )
-    .withFaceLandmarks()
-    .withFaceExpressions();
-}
-
-async function checkFace(id) {
-  if(id!==generation || !stream || stageReady===false) return;
-
-  try {
-    const result=await detectExpression(camCal);
-    if(id!==generation || !stream) return;
-
-    if(result) {
-      $("next").disabled=false;
-      setStatus("Лицо найдено. Сделай выражение и нажми «Далее».");
-      $("progressFill").style.width="100%";
-    } else {
-      $("next").disabled=true;
-      setStatus("Лицо не найдено — посмотри в камеру.");
-      $("progressFill").style.width="0%";
-    }
-  } catch(error) {
-    console.error(error);
-    setStatus("Ошибка проверки камеры.");
-    $("next").disabled=true;
-  }
-
-  if(id===generation && stream) {
-    timer=setTimeout(()=>checkFace(id),400);
-  }
-}
-
-async function nextStep() {
-  if(!stream || !stageReady || $("next").disabled) return;
-
-  const id=generation;
-  $("next").disabled=true;
-  setStatus("Сохраняем выражение…");
-
-  try {
-    // Снимаем несколько кадров и усредняем показатели,
-    // чтобы одиночный ошибочный кадр меньше влиял на результат.
-    const samples=[];
-
-    for(let i=0;i<5;i++) {
-      if(id!==generation || !stream) return;
-
-      const result=await detectExpression(camCal);
-
-      if(result) samples.push(result.expressions);
-
-      if(i<4) {
-        await new Promise(resolve=>setTimeout(resolve,100));
-      }
-    }
-
-    if(id!==generation) return;
-
-    if(samples.length<3) {
-      setStatus("Лицо потеряно. Посмотри в камеру и попробуй снова.");
-      $("next").disabled=false;
-      return;
-    }
-
-    const avg={};
-
-    for(const key of Object.keys(labels)) {
-      avg[key]=samples.reduce((sum,s)=>sum+(s[key]||0),0)/samples.length;
-    }
-
-    calibrationData.push({
-      key:sequence[currentStep].key,
-      expressions:avg,
-      samples:samples.length
-    });
-
-    if(sequence[currentStep].key==="neutral") {
-      neutralReference=avg;
-    }
-
-    currentStep++;
-
-    if(currentStep>=sequence.length) {
-      finishCalibration();
-    } else {
-      beginStep();
-    }
-  } catch(error) {
-    console.error(error);
-    setStatus("Не удалось сохранить данные. Попробуй ещё раз.");
-    $("next").disabled=false;
-  }
-}
-
-function finishCalibration() {
-  clearTimeout(timer);
-  running=true;
-  show("app");
-
-  $("calResult").textContent="✓ Калибровка завершена";
-  $("calInfo").textContent=
-    `Записано выражений: ${calibrationData.length} из ${sequence.length}. `+
-    "Образцы сохранены в памяти текущей сессии.";
-
-  $("status").textContent="Система активна";
-  $("meshLabel").textContent="Face mesh";
-  resizeCanvas();
-  analysisLoop();
-}
-
-function resizeCanvas() {
-  const rect=canvas.getBoundingClientRect();
-  if(!rect.width || !rect.height) return;
-
-  const dpr=Math.min(window.devicePixelRatio||1,2);
-  canvas.width=Math.round(rect.width*dpr);
-  canvas.height=Math.round(rect.height*dpr);
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-}
-
-function drawMesh(result) {
-  const rect=canvas.getBoundingClientRect();
-  const w=rect.width,h=rect.height;
-
-  ctx.clearRect(0,0,w,h);
-
-  if(!showMesh || !result.faceLandmarks?.length) return;
-
-  const points=result.faceLandmarks[0];
-  const connections=FaceLandmarker.FACE_LANDMARKS_TESSELATION;
-
-  ctx.lineWidth=.55;
-  ctx.strokeStyle="rgba(66,232,117,.48)";
-  ctx.beginPath();
-
-  for(const edge of connections) {
-    const a=points[edge.start];
-    const b=points[edge.end];
-    if(!a || !b) continue;
-
-    ctx.moveTo((1-a.x)*w,a.y*h);
-    ctx.lineTo((1-b.x)*w,b.y*h);
-  }
-
-  ctx.stroke();
-
-  ctx.fillStyle="#42e875";
-
-  for(let i=0;i<points.length;i+=2) {
-    const p=points[i];
-    ctx.beginPath();
-    ctx.arc((1-p.x)*w,p.y*h,.8,0,Math.PI*2);
-    ctx.fill();
-  }
-}
-
-function renderExpressions(expressions) {
-  const ranked=Object.entries(labels)
-    .map(([key,label])=>({key,label,value:expressions[key]||0}))
-    .sort((a,b)=>b.value-a.value);
-
-  const best=ranked[0];
-
-  $("mainEmotion").textContent=best.label;
-  $("mainConf").textContent=
-    `Оценка модели: ${Math.round(best.value*100)}%`;
-
-  $("emotionList").innerHTML=ranked.map(item=>{
-    const value=Math.round(item.value*100);
-    return `
-      <div class="emotion">
-        <div class="emotionTop">
-          <span>${item.label}</span><span>${value}%</span>
-        </div>
-        <div class="bar">
-          <div class="fill" style="width:${value}%"></div>
-        </div>
-      </div>`;
-  }).join("");
-}
-
-async function analysisLoop() {
-  if(!running || busy) return;
-  busy=true;
-
-  try {
-    if(video.readyState>=2 && video.currentTime!==lastVideoTime) {
-      lastVideoTime=video.currentTime;
-
-      const meshResult=landmarker.detectForVideo(video,performance.now());
-      drawMesh(meshResult);
-
-      const result=await detectExpression(video);
-      if(!running) return;
-
-      if(result) {
-        renderExpressions(result.expressions);
-        $("faceStatus").textContent="ЛИЦО НАЙДЕНО";
-        $("meshLabel").textContent=
-          `Face mesh · ${meshResult.faceLandmarks[0]?.length||0} точек`;
-      } else {
-        $("faceStatus").textContent="ПОИСК ЛИЦА";
-        $("meshLabel").textContent="Лицо не обнаружено";
-        $("mainEmotion").textContent="—";
-        $("mainConf").textContent="Посмотри в камеру";
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-      }
-    }
-  } catch(error) {
-    console.error(error);
-    $("status").textContent="Ошибка анализа";
-  } finally {
-    busy=false;
-  }
-
-  if(running) timer=setTimeout(analysisLoop,70);
-}
-
-function stopAll() {
-  generation++;
-  running=false;
-  busy=false;
-  stageReady=false;
-  clearTimeout(timer);
-  stopStream();
-
-  const rect=canvas.getBoundingClientRect();
-  ctx.clearRect(0,0,rect.width,rect.height);
-
-  $("next").disabled=true;
-  show("welcome");
-}
-
-$("start").addEventListener("click",start);
-$("cancel").addEventListener("click",stopAll);
-$("stop").addEventListener("click",stopAll);
-$("next").addEventListener("click",nextStep);
-
-$("recalibrate").addEventListener("click",()=>{
-  running=false;
-  clearTimeout(timer);
-  currentStep=0;
-  calibrationData=[];
-  show("calibration");
+  if(id!==generation)return;
+  if(collected.length<3){status("Потеряли лицо. Посмотри в камеру и нажми «Далее» ещё раз.");$("next").disabled=false;return}
+  calibrationData.push({key:steps[currentStep].key,samples:collected});
+  currentStep++;
   beginStep();
-});
+ }catch(e){console.error(e);status("Не удалось сохранить образец. Попробуй ещё раз.");$("next").disabled=false}
+ finally{
+  busy=false;
+  // После последнего этапа запускаем live-анализ только после снятия блокировки busy.
+  if(running){clearTimeout(timer);timer=setTimeout(analysisLoop,0)}
+ }
+}
+function finishCalibration(){
+ clearTimeout(timer);timer=null;running=true;show("app");
+ $("calResult").textContent="✓ Калибровка завершена";
+ $("calInfo").textContent=`Записано выражений: ${calibrationData.length} из ${steps.length}. Образцы хранятся в памяти этой сессии.`;
+ $("status").textContent="Система активна";resizeCanvas();
+}
+function resizeCanvas(){
+ const r=canvas.getBoundingClientRect();if(!r.width||!r.height)return;
+ const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function drawMesh(result){
+ const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;
+ ctx.clearRect(0,0,w,h);
+ const points=result.faceLandmarks?.[0];
+ if(!showMesh||!points)return;
 
-$("meshToggle").addEventListener("click",()=>{
-  showMesh=!showMesh;
-  $("meshToggle").textContent=showMesh?"Скрыть сетку":"Показать сетку";
-
-  if(!showMesh) {
-    const rect=canvas.getBoundingClientRect();
-    ctx.clearRect(0,0,rect.width,rect.height);
+ // Видео имеет object-fit:contain, поэтому учитываем поля по краям,
+ // иначе сетка может смещаться при другом соотношении сторон камеры.
+ const vw=video.videoWidth||w, vh=video.videoHeight||h;
+ const scale=Math.min(w/vw,h/vh), dw=vw*scale, dh=vh*scale;
+ const ox=(w-dw)/2, oy=(h-dh)/2;
+ const xy=p=>({x:ox+(1-p.x)*dw,y:oy+p.y*dh}); // зеркально, как видео
+ const drawConnections=(connections,color,width)=>{
+  ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=width;
+  for(const edge of connections){
+   const a=points[edge.start],b=points[edge.end];if(!a||!b)continue;
+   const pa=xy(a),pb=xy(b);ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);
   }
-});
+  ctx.stroke();
+ };
 
+ // Тонкая полная сетка.
+ drawConnections(FaceLandmarker.FACE_LANDMARKS_TESSELATION,"rgba(66,232,117,.32)",.55);
+ // Яркий большой овал лица и отдельный маленький контур губ.
+ drawConnections(FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,"#42e875",2.4);
+ drawConnections(FaceLandmarker.FACE_LANDMARKS_LIPS,"#ffffff",2.0);
+
+ // Точки ориентиров.
+ ctx.fillStyle="#42e875";
+ for(let i=0;i<points.length;i+=3){
+  const p=xy(points[i]);ctx.beginPath();ctx.arc(p.x,p.y,1.05,0,Math.PI*2);ctx.fill();
+ }
+}
+function averageBlendshapes(result){
+ const values=blendshapeMap(result);
+ const v=k=>values[k]||0;
+ // Blendshapes are facial movement coefficients, not probabilities of real emotions.
+ const scores={
+  neutral:Math.max(.01,1-(v("mouthSmileLeft")+v("mouthSmileRight")+v("browDownLeft")+v("browDownRight")+v("jawOpen"))/5),
+  happy:(v("mouthSmileLeft")+v("mouthSmileRight")+v("cheekSquintLeft")+v("cheekSquintRight"))/4,
+  sad:(v("mouthFrownLeft")+v("mouthFrownRight")+v("browInnerUp"))/3,
+  angry:(v("browDownLeft")+v("browDownRight")+v("noseSneerLeft")+v("noseSneerRight"))/4,
+  surprised:(v("jawOpen")+v("eyeWideLeft")+v("eyeWideRight")+v("browInnerUp"))/4,
+  fearful:(v("eyeWideLeft")+v("eyeWideRight")+v("browInnerUp")+v("mouthStretchLeft")+v("mouthStretchRight"))/5,
+  disgusted:(v("noseSneerLeft")+v("noseSneerRight")+v("mouthUpperUpLeft")+v("mouthUpperUpRight"))/4
+ };
+ const sum=Object.values(scores).reduce((a,b)=>a+b,0)||1;
+ for(const k in scores)scores[k]/=sum;
+ return scores;
+}
+function renderScores(scores){
+ // Сглаживаем показания, чтобы проценты не дёргались от кадра к кадру.
+ if(!smoothedScores){
+  smoothedScores={...scores};
+ }else{
+  for(const key of emotionOrder){
+   const previous=smoothedScores[key]||0;
+   smoothedScores[key]=previous+(scores[key]-previous)*smoothingStrength;
+  }
+ }
+ // Порядок всегда фиксированный: эмоции не переставляются местами.
+ $("emotionList").innerHTML=emotionOrder.map(key=>{
+  const value=Math.max(0,Math.min(1,smoothedScores[key]||0));
+  const pct=Math.round(value*100);
+  return `<div class="emotion"><div class="emotionTop"><span>${expressionNames[key]}</span><span>${pct}%</span></div><div class="bar"><div class="fill" style="width:${pct}%"></div></div></div>`;
+ }).join("");
+ $("mainConf").textContent="Сглаженная оценка движений лица · не диагноз эмоций";
+}
+function analysisLoop(){
+ if(!running||busy)return;busy=true;
+ try{
+  if(video.readyState>=2){
+   const result=getResult(video),found=!!result.faceLandmarks?.length;
+   drawMesh(result);
+   if(found){
+    renderScores(averageBlendshapes(result));$("faceStatus").textContent="ЛИЦО НАЙДЕНО";
+    $("meshLabel").textContent=`Сетка лица · ${result.faceLandmarks[0].length} точек`;
+    $("status").textContent="Камера работает";
+   }else{
+    $("faceStatus").textContent="ПОИСК ЛИЦА";$("meshLabel").textContent="Лицо не обнаружено — смотри прямо в камеру";
+    $("mainConf").textContent="Лицо временно не найдено — показаны последние значения";
+   }
+  }
+ }catch(e){console.error(e);$("status").textContent="Ошибка анализа"}
+ finally{busy=false}
+ if(running)timer=setTimeout(analysisLoop,40);
+}
+function stopAll(){
+ stopPeople();
+ generation++;running=false;busy=false;clearTimeout(timer);
+ if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+ video.srcObject=null;calVideo.srcObject=null;
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ show("welcome");$("next").disabled=true;
+}
+$("startEmotion").addEventListener("click",start);
+$("openPeople").addEventListener("click",()=>show("people"));
+$("backHome").addEventListener("click",()=>{stopPeople();show("welcome")});
+$("startPeople").addEventListener("click",startPeople);
+$("stopPeople").addEventListener("click",stopPeople);
+$("next").addEventListener("click",nextStep);
+$("cancel").addEventListener("click",stopAll);$("stop").addEventListener("click",stopAll);
+$("recalibrate").addEventListener("click",()=>{
+ running=false;clearTimeout(timer);currentStep=0;calibrationData=[];smoothedScores=null;show("calibration");beginStep();
+});
+$("meshToggle").addEventListener("click",()=>{
+ showMesh=!showMesh;$("meshToggle").textContent=showMesh?"Скрыть сетку":"Показать сетку";
+ if(!showMesh){const r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height)}
+});
 window.addEventListener("resize",resizeCanvas);
+window.addEventListener("beforeunload",()=>{generation++;running=false;clearTimeout(timer);if(stream)stream.getTracks().forEach(t=>t.stop())});
+$("emotionList").innerHTML=emotionOrder.map(key=>`<div class="emotion"><div class="emotionTop"><span>${expressionNames[key]}</span><span>—%</span></div><div class="bar"><div class="fill"></div></div></div>`).join("");
 
-window.addEventListener("beforeunload",()=>{
-  generation++;
-  running=false;
-  clearTimeout(timer);
-  stopStream();
-});
-
-$("emotionList").innerHTML=Object.entries(labels).map(([key,label])=>`
-  <div class="emotion">
-    <div class="emotionTop"><span>${label}</span><span>—</span></div>
-    <div class="bar"><div class="fill"></div></div>
-  </div>
-`).join("");
+async function loadPeopleModels(){
+ if(peopleModelsReady)return;
+ $("peopleStatus").textContent="Загружаем модели распознавания…";
+ const modelUrl="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model";
+ await Promise.all([
+  faceapi.nets.ssdMobilenetv1.loadFromUri(modelUrl),
+  faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl),
+  faceapi.nets.faceRecognitionNet.loadFromUri(modelUrl)
+ ]);
+ peopleModelsReady=true;
+}
+async function buildPeopleMatcher(){
+ const profiles=[
+  {name:"Алиса",url:"./alisa.jpg"},
+  {name:"Матвей",url:"./matvey.jpg"}
+ ];
+ const labeled=[];
+ for(const profile of profiles){
+  const img=new Image();img.crossOrigin="anonymous";img.src=profile.url;
+  await new Promise((resolve,reject)=>{
+   img.onload=resolve;img.onerror=()=>reject(new Error(`Не удалось загрузить ${profile.url}. Проверь, что файл лежит рядом с index.html и имя совпадает.`));
+  });
+  const detection=await faceapi.detectSingleFace(img,new faceapi.SsdMobilenetv1Options({minConfidence:.35})).withFaceLandmarks().withFaceDescriptor();
+  if(!detection)throw new Error(`На фото ${profile.name} не удалось найти лицо. Загрузи чёткое фото анфас.`);
+  labeled.push(new faceapi.LabeledFaceDescriptors(profile.name,[detection.descriptor]));
+ }
+ peopleMatcher=new faceapi.FaceMatcher(labeled,.52);
+}
+async function startPeople(){
+ $("startPeople").disabled=true;
+ try{
+  $("peopleStatus").textContent="Подготавливаем распознавание…";
+  await loadPeopleModels();
+  await buildPeopleMatcher();
+  peopleStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:false});
+  const v=$("peopleVideo");v.srcObject=peopleStream;
+  await new Promise((resolve,reject)=>{
+   if(v.readyState>=2){resolve();return}
+   v.onloadedmetadata=()=>resolve();
+   v.onerror=()=>reject(new Error("Не удалось открыть видео с камеры."));
+  });
+  await v.play();
+  $("peopleStage").hidden=false;$("stopPeople").hidden=false;
+  peopleRunning=true;$("peopleStatus").textContent="Камера работает — ищем Алису и Матвея…";
+  peopleLoop();
+ }catch(e){
+  console.error(e);
+  $("peopleStatus").textContent="Ошибка: "+e.message;
+  stopPeople();
+  alert("Не удалось запустить распознавание людей:\n"+e.message+"\n\nПроверь имена файлов, фотографии и доступ к камере.");
+ }finally{$("startPeople").disabled=false}
+}
+function stopPeople(){
+ peopleRunning=false;peopleBusy=false;clearTimeout(peopleTimer);
+ if(peopleStream){peopleStream.getTracks().forEach(t=>t.stop());peopleStream=null}
+ const v=$("peopleVideo");if(v)v.srcObject=null;
+ const c=$("peopleOverlay");if(c){const x=c.getContext("2d");x.clearRect(0,0,c.width,c.height)}
+ $("peopleStage").hidden=true;$("stopPeople").hidden=true;
+}
+async function peopleLoop(){
+ if(!peopleRunning||peopleBusy)return;
+ const v=$("peopleVideo"),c=$("peopleOverlay");
+ if(v.readyState<2){peopleTimer=setTimeout(peopleLoop,150);return}
+ peopleBusy=true;
+ try{
+  const vw=v.videoWidth,vh=v.videoHeight;
+  if(!vw||!vh)return;
+  if(c.width!==vw||c.height!==vh){c.width=vw;c.height=vh}
+  const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);
+  const detections=await faceapi.detectAllFaces(v,new faceapi.SsdMobilenetv1Options({minConfidence:.45})).withFaceLandmarks().withFaceDescriptors();
+  const sx=c.clientWidth/vw,sy=c.clientHeight/vh;
+  for(const det of detections){
+   const match=peopleMatcher.findBestMatch(det.descriptor);
+   const known=match.label!=="unknown";
+   const box=det.detection.box;
+   const x=(vw-box.x-box.width)*sx,y=box.y*sy,w=box.width*sx,h=box.height*sy;
+   ctx.strokeStyle=known?"#42e875":"#ffb454";ctx.lineWidth=2;ctx.strokeRect(x,y,w,h);
+   const label=known?match.label:"Неизвестный";
+   ctx.font="600 15px Inter, Arial, sans-serif";
+   const tw=ctx.measureText(label).width;
+   const lx=Math.max(4,Math.min(c.clientWidth-tw-20,x));
+   const ly=Math.max(22,y-10);
+   ctx.fillStyle=known?"#42e875":"#ffb454";
+   ctx.fillRect(lx-7,ly-22,tw+20,28);
+   ctx.fillStyle="#071109";ctx.fillText(label,lx+3,ly-3);
+  }
+  $("peopleStatus").textContent=detections.length
+   ?`Найдено лиц: ${detections.length}. Подписи показывают предполагаемое совпадение с фотографиями.`
+   :"Лиц пока не видно — посмотри в камеру.";
+ }catch(e){console.error(e);$("peopleStatus").textContent="Ошибка обработки кадра: "+e.message}
+ finally{peopleBusy=false;if(peopleRunning)peopleTimer=setTimeout(peopleLoop,180)}
+}
 
 </script>
 </body>
