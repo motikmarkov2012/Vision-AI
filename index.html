@@ -63,15 +63,11 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid var(--
 <section id="people" class="screen"><div class="center people-center">
 <div class="logo">⌘</div><div class="brand">face<span>.</span>ai</div>
 <div class="eyebrow">РАСПОЗНАВАНИЕ ЛЮДЕЙ</div>
-<h1>Алиса и Матвей</h1>
-<p class="muted">Режим людей будет подключён после того, как ты загрузишь фотографии в GitHub. Сами фотографии показывать на странице можно уже сейчас, но для распознавания нужно дополнительно сравнивать признаки лиц.</p>
-<div class="profile-grid">
-<div class="profile-card"><img class="profile-photo" id="alisaPhoto" src="./alisa.jpg" alt="Фото Алисы"><strong>Алиса</strong><small>alisa.jpg</small></div>
-<div class="profile-card"><img class="profile-photo" id="matveyPhoto" src="./matvey.jpg" alt="Фото Матвея"><strong>Матвей</strong><small>matvey.jpg</small></div>
-</div>
+<h1>Определение людей</h1>
+<p class="muted">Камера сравнивает лица с фотографиями Алисы и Матвея. Если совпадения нет, подпись не показывается.</p>
 <div class="people-toolbar"><div class="people-status" id="peopleStatus">Нажми «Запустить распознавание» и разреши доступ к камере.</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="secondary" id="stopPeople" hidden>Остановить</button><button class="secondary" id="backHome">← Назад</button><button class="primary" id="startPeople" style="width:auto;margin:0;padding:11px 14px">Запустить распознавание</button></div></div>
 <div class="people-stage" id="peopleStage" hidden><video id="peopleVideo" autoplay playsinline muted></video><canvas id="peopleOverlay"></canvas></div>
-<p class="muted">Распознавание выполняется в браузере. Для более точного результата нужны чёткие фотографии лица анфас и хорошее освещение.</p>
+<p class="muted">Фотографии используются только для сравнения и не отображаются на экране.</p>
 </div></section>
 
 <section id="calibration" class="screen"><div class="center">
@@ -120,6 +116,7 @@ const expressionNames={neutral:"Нейтрально",happy:"Радость",sad
 let stream=null, landmarker=null, generation=0, timer=null, running=false, busy=false, showMesh=true;
 let currentStep=0, calibrationData=[], lastVideoTime=-1;
 let smoothedScores=null;
+let peopleStream=null,peopleRunning=false,peopleBusy=false,peopleTimer=null,peopleMatcher=null,peopleModelsReady=false;
 const emotionOrder=["neutral","happy","sad","angry","surprised","fearful","disgusted"];
 const smoothingStrength=0.18; // меньше значение = более плавные, но медленнее меняющиеся проценты
 
@@ -408,22 +405,23 @@ async function peopleLoop(){
   const sx=c.clientWidth/vw,sy=c.clientHeight/vh;
   for(const det of detections){
    const match=peopleMatcher.findBestMatch(det.descriptor);
-   const known=match.label!=="unknown";
+   // Не показываем ничего, если человек не совпал с профилями Алисы и Матвея.
+   if(match.label==="unknown")continue;
    const box=det.detection.box;
    const x=(vw-box.x-box.width)*sx,y=box.y*sy,w=box.width*sx,h=box.height*sy;
-   ctx.strokeStyle=known?"#42e875":"#ffb454";ctx.lineWidth=2;ctx.strokeRect(x,y,w,h);
-   const label=known?match.label:"Неизвестный";
+   const label=match.label;
    ctx.font="600 15px Inter, Arial, sans-serif";
    const tw=ctx.measureText(label).width;
    const lx=Math.max(4,Math.min(c.clientWidth-tw-20,x));
    const ly=Math.max(22,y-10);
-   ctx.fillStyle=known?"#42e875":"#ffb454";
+   ctx.fillStyle="#42e875";
    ctx.fillRect(lx-7,ly-22,tw+20,28);
    ctx.fillStyle="#071109";ctx.fillText(label,lx+3,ly-3);
   }
-  $("peopleStatus").textContent=detections.length
-   ?`Найдено лиц: ${detections.length}. Подписи показывают предполагаемое совпадение с фотографиями.`
-   :"Лиц пока не видно — посмотри в камеру.";
+  const recognized=detections.filter(det=>peopleMatcher.findBestMatch(det.descriptor).label!=="unknown").length;
+  $("peopleStatus").textContent=recognized
+   ?`Распознано людей: ${recognized}`
+   :"Ожидание Алисы или Матвея…";
  }catch(e){console.error(e);$("peopleStatus").textContent="Ошибка обработки кадра: "+e.message}
  finally{peopleBusy=false;if(peopleRunning)peopleTimer=setTimeout(peopleLoop,180)}
 }
