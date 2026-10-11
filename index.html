@@ -19,7 +19,7 @@
 .people-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0 10px;text-align:left}
 .people-stage{position:relative;width:100%;aspect-ratio:16/9;max-height:62vh;background:#050706;border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .people-stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scaleX(-1)}
-#peopleOverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#peopleOverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1)}
 .people-status{font-size:11px;color:var(--green);line-height:1.6;text-align:left}
 @media(max-width:600px){.people-stage{aspect-ratio:4/3}.people-toolbar{align-items:flex-start;flex-direction:column}}
 :root{--bg:#080a09;--panel:#101411;--line:#242c25;--green:#42e875;--text:#f2f5f2;--muted:#879188}
@@ -65,7 +65,7 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid var(--
 <div class="eyebrow">РАСПОЗНАВАНИЕ ЛЮДЕЙ</div>
 <h1>Определение людей</h1>
 <p class="muted">Камера сравнивает лица с фотографиями Алисы и Матвея. Если совпадения нет, подпись не показывается.</p>
-<div class="people-toolbar"><div class="people-status" id="peopleStatus">Нажми «Запустить распознавание» и разреши доступ к камере.</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="secondary" id="stopPeople" hidden>Остановить</button><button class="secondary" id="backHome">← Назад</button><button class="primary" id="startPeople" style="width:auto;margin:0;padding:11px 14px">Запустить распознавание</button></div></div>
+<div class="people-toolbar"><div class="people-status" id="peopleStatus">Нажми «Запустить распознавание» и разреши доступ к камере.</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="secondary" id="stopPeople" hidden>Остановить</button><button class="secondary" id="backHome">← Назад</button><button class="primary" id="startPeople" style="width:auto;margin:0;padding:11px 14px">Открыть камеру</button></div></div>
 <div class="people-stage" id="peopleStage" hidden><video id="peopleVideo" autoplay playsinline muted></video><canvas id="peopleOverlay"></canvas></div>
 <p class="muted">Фотографии используются только для сравнения и не отображаются на экране.</p>
 </div></section>
@@ -374,6 +374,8 @@ async function startPeople(){
    v.onerror=()=>reject(new Error("Не удалось открыть видео с камеры."));
   });
   await v.play();
+  // Match the camera viewport to the real video ratio so the oval stays on the face.
+  if(v.videoWidth&&v.videoHeight)$("peopleStage").style.aspectRatio=`${v.videoWidth} / ${v.videoHeight}`;
   $("peopleStage").hidden=false;$("stopPeople").hidden=false;
   peopleRunning=true;$("peopleStatus").textContent="Камера работает — ищем Алису и Матвея…";
   peopleLoop();
@@ -399,26 +401,49 @@ async function peopleLoop(){
  try{
   const vw=v.videoWidth,vh=v.videoHeight;
   if(!vw||!vh)return;
+  // Draw in the canvas's native video coordinate system. CSS mirrors both video and overlay.
   if(c.width!==vw||c.height!==vh){c.width=vw;c.height=vh}
   const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);
   const detections=await faceapi.detectAllFaces(v,new faceapi.SsdMobilenetv1Options({minConfidence:.45})).withFaceLandmarks().withFaceDescriptors();
-  const sx=c.clientWidth/vw,sy=c.clientHeight/vh;
+  let recognized=0;
   for(const det of detections){
    const match=peopleMatcher.findBestMatch(det.descriptor);
-   // Не показываем ничего, если человек не совпал с профилями Алисы и Матвея.
+   // Unknown people get no label and no drawing at all.
    if(match.label==="unknown")continue;
+   recognized++;
    const box=det.detection.box;
-   const x=(vw-box.x-box.width)*sx,y=box.y*sy,w=box.width*sx,h=box.height*sy;
+   const x=box.x,y=box.y,w=box.width,h=box.height;
+   const cx=x+w/2,cy=y+h/2;
    const label=match.label;
-   ctx.font="600 15px Inter, Arial, sans-serif";
+
+   // A face-shaped oval, tightly following the detected face.
+   ctx.save();
+   ctx.strokeStyle="#42e875";
+   ctx.lineWidth=Math.max(2,vw/640*2.2);
+   ctx.beginPath();
+   ctx.ellipse(cx,cy+h*.015,w*.54,h*.61,0,0,Math.PI*2);
+   ctx.stroke();
+
+   // Name sits on the forehead, just inside the top of the face oval,
+   // rather than far above the bounding box.
+   const fontSize=Math.max(15,Math.min(26,w*.105));
+   ctx.font=`700 ${fontSize}px Inter, Arial, sans-serif`;
    const tw=ctx.measureText(label).width;
-   const lx=Math.max(4,Math.min(c.clientWidth-tw-20,x));
-   const ly=Math.max(22,y-10);
+   const padX=Math.max(7,fontSize*.42),padY=Math.max(4,fontSize*.24);
+   const labelW=tw+padX*2,labelH=fontSize+padY*2;
+   const lx=Math.max(3,Math.min(vw-labelW-3,cx-labelW/2));
+   const ly=Math.max(2,y+h*.075-labelH/2);
    ctx.fillStyle="#42e875";
-   ctx.fillRect(lx-7,ly-22,tw+20,28);
-   ctx.fillStyle="#071109";ctx.fillText(label,lx+3,ly-3);
+   ctx.beginPath();
+   const radius=Math.min(8,labelH/3);
+   ctx.roundRect(lx,ly,labelW,labelH,radius);
+   ctx.fill();
+   ctx.fillStyle="#071109";
+   ctx.textAlign="center";
+   ctx.textBaseline="middle";
+   ctx.fillText(label,lx+labelW/2,ly+labelH/2+0.5);
+   ctx.restore();
   }
-  const recognized=detections.filter(det=>peopleMatcher.findBestMatch(det.descriptor).label!=="unknown").length;
   $("peopleStatus").textContent=recognized
    ?`Распознано людей: ${recognized}`
    :"Ожидание Алисы или Матвея…";
