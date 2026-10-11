@@ -3,7 +3,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#080a09">
 <title>face.ai — Facial Motion Lab</title>
 
@@ -17,7 +17,7 @@
   --muted:#879188;
 }
 *{box-sizing:border-box}
-body{
+body {
   margin:0;background:var(--bg);color:var(--text);
   font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   min-height:100vh;
@@ -29,20 +29,18 @@ button:focus-visible{outline:2px solid var(--green);outline-offset:4px}
 #welcome,#calibration{align-items:center;justify-content:center;padding:24px}
 .center{width:min(430px,100%);text-align:center}
 .logo{
-  width:64px;height:64px;margin:0 auto 23px;
-  display:grid;place-items:center;border:1px solid #31543a;
-  border-radius:21px;background:#122017;color:var(--green);
-  font-size:28px;
+  width:64px;height:64px;margin:0 auto 23px;display:grid;place-items:center;
+  border:1px solid #31543a;border-radius:21px;background:#122017;
+  color:var(--green);font-size:28px;
 }
 .brand{font-size:25px;font-weight:700;letter-spacing:-1px}
 .brand span{color:var(--green)}
 .muted{color:var(--muted);font-size:12px;line-height:1.8}
 .primary{
   width:100%;padding:15px;border:0;border-radius:12px;
-  background:var(--green);color:#071109;font-weight:750;
-  margin-top:26px;
+  background:var(--green);color:#071109;font-weight:750;margin-top:26px;
 }
-.primary:disabled{opacity:.45;cursor:wait}
+.primary:disabled{opacity:.5;cursor:wait}
 .secondary{
   padding:10px 13px;border:1px solid var(--line);
   background:#131713;color:var(--text);border-radius:9px;font-size:11px;
@@ -58,9 +56,7 @@ h1{font-size:26px;letter-spacing:-1px;margin:0 0 12px}
 #progressFill{height:100%;width:0;background:var(--green);transition:width .2s}
 #calStatus{font-size:11px;color:var(--green);margin-top:13px;min-height:17px}
 .steps{display:flex;justify-content:center;gap:8px;margin-top:22px}
-.step{
-  width:8px;height:8px;border-radius:50%;background:#303830;
-}
+.step{width:8px;height:8px;border-radius:50%;background:#303830}
 .step.done{background:var(--green)}
 .step.current{outline:3px solid #42e87525;background:var(--green)}
 #app{flex-direction:column;padding:0 30px 22px}
@@ -86,7 +82,7 @@ header .brand{font-size:17px}
 .stage-label{
   position:absolute;bottom:13px;left:13px;background:#080a09d9;
   border:1px solid #ffffff14;padding:9px 11px;border-radius:8px;
-  color:#d6e2d8;font-size:10px;
+  color:#d6e2d8;font-size:10px;pointer-events:none;
 }
 .controls{display:flex;gap:8px;flex-wrap:wrap;padding:13px}
 .side{display:flex;flex-direction:column;gap:14px}
@@ -109,30 +105,42 @@ header .brand{font-size:17px}
 @media(max-width:520px){
   .side{display:flex}
   .stage{aspect-ratio:4/3}
+  .controls{gap:6px}
+  .secondary{padding:9px}
   .status{font-size:9px}
+  .mainEmotion{font-size:22px}
 }
 </style>
 </head>
+
 <body>
 
 <section id="welcome" class="screen active">
   <div class="center">
     <div class="logo">⌁</div>
     <div class="brand">face<span>.</span>ai</div>
-    <p class="muted">Facial Motion Lab<br>Калибровка, лицевые ориентиры и анализ выражений</p>
+    <p class="muted">
+      Facial Motion Lab<br>
+      Калибровка, лицевые ориентиры и анализ выражений
+    </p>
     <button class="primary" id="start">Начать калибровку</button>
-    <p class="muted">Камера включится после нажатия.<br>Видео обрабатывается в браузере.</p>
+    <p class="muted">
+      Камера включится после нажатия.<br>
+      Видео обрабатывается в браузере.
+    </p>
   </div>
 </section>
 
 <section id="calibration" class="screen">
   <div class="center">
-    <div class="eyebrow" id="calStep">STEP 01 / 05</div>
+    <div class="eyebrow" id="calStep">ПОДГОТОВКА</div>
     <video id="calibrationVideo" autoplay playsinline muted></video>
-    <h1 id="calTitle">Нейтральное лицо</h1>
-    <p class="muted" id="calDescription">Смотри прямо в камеру и расслабь лицо.</p>
+    <h1 id="calTitle">Подключение камеры</h1>
+    <p class="muted" id="calDescription">
+      Разреши доступ к камере. Затем загрузим модели распознавания.
+    </p>
     <div class="progress"><div id="progressFill"></div></div>
-    <div id="calStatus">Загрузка моделей…</div>
+    <div id="calStatus">Ожидание…</div>
     <div class="steps" id="steps">
       <i class="step current"></i><i class="step"></i><i class="step"></i>
       <i class="step"></i><i class="step"></i>
@@ -178,13 +186,14 @@ header .brand{font-size:17px}
         <p class="note" id="calInfo">Система попросит показать пять выражений.</p>
       </section>
       <p class="note">
-        Сетка показывает геометрию лица, а не эмоции. Эмоции — приблизительные
-        оценки видимых выражений, не определение истинных чувств.
+        Сетка показывает геометрию лица, а оценки выражений приблизительны
+        и не позволяют достоверно определить истинные чувства человека.
       </p>
     </aside>
   </main>
 </section>
 
+<!-- Модели загружаются после того, как камера уже открыта -->
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
 
 <script type="module">
@@ -194,7 +203,6 @@ import {
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 
 const $ = id => document.getElementById(id);
-
 const screens = ["welcome", "calibration", "app"];
 const camCal = $("calibrationVideo");
 const video = $("video");
@@ -202,41 +210,21 @@ const canvas = $("mesh");
 const ctx = canvas.getContext("2d");
 
 const labels = {
-  neutral: "Нейтрально",
-  happy: "Радость",
-  sad: "Грусть",
-  angry: "Злость",
-  surprised: "Удивление",
-  fearful: "Страх",
-  disgusted: "Отвращение"
+  neutral:"Нейтрально",
+  happy:"Радость",
+  sad:"Грусть",
+  angry:"Злость",
+  surprised:"Удивление",
+  fearful:"Страх",
+  disgusted:"Отвращение"
 };
 
 const sequence = [
-  {
-    title: "Нейтральное лицо",
-    description: "Расслабь лицо, закрой рот естественным образом и смотри прямо.",
-    key: "neutral"
-  },
-  {
-    title: "Улыбнись",
-    description: "Покажи естественную улыбку и удерживай её несколько секунд.",
-    key: "happy"
-  },
-  {
-    title: "Удивление",
-    description: "Подними брови и широко открой глаза, будто сильно удивился.",
-    key: "surprised"
-  },
-  {
-    title: "Грусть",
-    description: "Изобрази грустное выражение лица без резких движений.",
-    key: "sad"
-  },
-  {
-    title: "Злость",
-    description: "Нахмурь брови и изобрази сердитое выражение.",
-    key: "angry"
-  }
+  {title:"Нейтральное лицо",description:"Расслабь лицо, закрой рот естественным образом и смотри прямо.",key:"neutral"},
+  {title:"Улыбнись",description:"Покажи естественную улыбку и удерживай её несколько секунд.",key:"happy"},
+  {title:"Удивление",description:"Подними брови и широко открой глаза.",key:"surprised"},
+  {title:"Грусть",description:"Изобрази грустное выражение лица.",key:"sad"},
+  {title:"Злость",description:"Нахмурь брови и изобрази сердитое выражение.",key:"angry"}
 ];
 
 let stream = null;
@@ -251,41 +239,41 @@ let currentStep = 0;
 let calibrationData = [];
 let neutralReference = null;
 let expressionDetectorReady = false;
+let stepStart = 0;
 
 function show(id) {
-  screens.forEach(s => $(s).classList.toggle("active", s === id));
+  screens.forEach(s => $(s).classList.toggle("active",s===id));
 }
 
 function setStatus(text) {
   $("calStatus").textContent = text;
 }
 
-function updateSteps(index) {
-  [...$("steps").children].forEach((el, i) => {
-    el.className = "step" +
-      (i < index ? " done" : i === index ? " current" : "");
-  });
-}
-
 async function loadModels() {
   if (landmarker && expressionDetectorReady) return;
-
-  $("status").textContent = "Загрузка моделей…";
 
   const vision = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
   );
 
-  landmarker = await FaceLandmarker.createFromOptions(vision, {
+  const options = {
     baseOptions: {
       modelAssetPath:
         "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-      delegate: "GPU"
+      delegate:"GPU"
     },
-    runningMode: "VIDEO",
-    numFaces: 1,
-    outputFaceBlendshapes: true
-  });
+    runningMode:"VIDEO",
+    numFaces:1,
+    outputFaceBlendshapes:true
+  };
+
+  try {
+    landmarker = await FaceLandmarker.createFromOptions(vision,options);
+  } catch (error) {
+    console.warn("GPU недоступен, пробуем CPU",error);
+    options.baseOptions.delegate = "CPU";
+    landmarker = await FaceLandmarker.createFromOptions(vision,options);
+  }
 
   await Promise.all([
     faceapi.nets.tinyFaceDetector.loadFromUri(
@@ -299,269 +287,253 @@ async function loadModels() {
   expressionDetectorReady = true;
 }
 
-async function openCamera() {
-  if (!navigator.mediaDevices?.getUserMedia) {
-    throw new Error("Открой сайт через HTTPS или localhost.");
+function stopStream() {
+  if (stream) {
+    stream.getTracks().forEach(track=>track.stop());
+    stream = null;
   }
-
-  stream = await navigator.mediaDevices.getUserMedia({
-    audio: false,
-    video: {
-      facingMode: "user",
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
-    }
-  });
-
-  camCal.srcObject = stream;
-  video.srcObject = stream;
-
-  await Promise.all([
-    waitForVideo(camCal),
-    waitForVideo(video)
-  ]);
+  video.srcObject = null;
+  camCal.srcObject = null;
 }
 
 function waitForVideo(el) {
-  return new Promise((resolve, reject) => {
-    if (el.readyState >= 2 && el.videoWidth) {
-      resolve();
-      return;
-    }
+  return new Promise((resolve,reject)=>{
+    if(el.readyState>=2 && el.videoWidth) return resolve();
 
-    el.addEventListener("loadeddata", resolve, { once: true });
-    el.addEventListener("error", () => reject(
-      new Error("Не удалось получить изображение камеры.")
-    ), { once: true });
+    const timeout=setTimeout(()=>{
+      cleanup();
+      reject(new Error("Тайм-аут ожидания камеры."));
+    },12000);
+
+    function cleanup(){
+      clearTimeout(timeout);
+      el.removeEventListener("loadeddata",onLoad);
+      el.removeEventListener("error",onError);
+    }
+    function onLoad(){cleanup();resolve();}
+    function onError(){cleanup();reject(new Error("Не удалось прочитать видеопоток."));}
+
+    el.addEventListener("loadeddata",onLoad,{once:true});
+    el.addEventListener("error",onError,{once:true});
   });
 }
 
+async function openCamera() {
+  if(!navigator.mediaDevices?.getUserMedia){
+    throw new Error("Открой сайт через HTTPS или localhost.");
+  }
+
+  stream=await navigator.mediaDevices.getUserMedia({
+    audio:false,
+    video:{
+      facingMode:"user",
+      width:{ideal:1280},
+      height:{ideal:720}
+    }
+  });
+
+  camCal.srcObject=stream;
+  video.srcObject=stream;
+
+  await Promise.all([waitForVideo(camCal),waitForVideo(video)]);
+  await Promise.all([camCal.play(),video.play()]);
+}
+
 async function start() {
-  const id = ++generation;
-  $("start").disabled = true;
+  const id=++generation;
+  $("start").disabled=true;
   show("calibration");
 
+  $("calTitle").textContent="Подключение камеры";
+  $("calDescription").textContent="Сначала откроем камеру, затем загрузим модели.";
+  setStatus("Открываем камеру…");
+
   try {
-    $("calTitle").textContent = "Подготовка";
-    $("calDescription").textContent =
-      "Загружаем модель сетки лица и анализ выражений.";
-    setStatus("Загрузка моделей…");
+    // ВАЖНО: камера запускается первой.
+    await openCamera();
+    if(id!==generation)return;
+
+    $("calTitle").textContent="Загрузка AI";
+    setStatus("Загружаем модели распознавания…");
 
     await loadModels();
-    if (id !== generation) return;
+    if(id!==generation)return;
 
-    setStatus("Запрашиваем камеру…");
-    await openCamera();
-    if (id !== generation) return;
-
-    currentStep = 0;
-    calibrationData = [];
+    currentStep=0;
+    calibrationData=[];
     beginStep();
-  } catch (err) {
-    console.error(err);
+  } catch(error) {
+    console.error("Face AI startup:",error);
     stopAll();
     show("welcome");
-    alert("Не удалось запустить Face AI: " + err.message);
-  } finally {
-    $("start").disabled = false;
-  }
-}
 
-function beginStep() {
-  if (currentStep >= sequence.length) {
-    finishCalibration();
-    return;
-  }
-
-  const step = sequence[currentStep];
-  $("calStep").textContent =
-    `STEP ${String(currentStep + 1).padStart(2, "0")} / 05`;
-  $("calTitle").textContent = step.title;
-  $("calDescription").textContent = step.description;
-  $("progressFill").style.width = "0%";
-  updateSteps(currentStep);
-
-  setStatus("Найди положение лица в кадре…");
-  stepLoop(generation);
-}
-
-async function stepLoop(id) {
-  if (id !== generation || !stream) return;
-
-  try {
-    const result = await detectExpression(camCal);
-
-    if (id !== generation) return;
-
-    if (!result) {
-      setStatus("Лицо не найдено — посмотри в камеру");
-      $("progressFill").style.width = "0%";
-      timer = setTimeout(() => stepLoop(id), 120);
-      return;
-    }
-
-    const step = sequence[currentStep];
-    const score = result.expressions[step.key] || 0;
-
-    // Сохраняем образцы, если лицо достаточно хорошо видно.
-    if (result.detection.score > 0.55) {
-      calibrationData.push({
-        key: step.key,
-        expressions: result.expressions,
-        landmarks: result.landmarks
-      });
-    }
-
-    const elapsed = performance.now() - stepStart;
-    const progress = Math.min(100, elapsed / 3500 * 100);
-    $("progressFill").style.width = progress + "%";
-
-    setStatus(
-      progress < 100
-        ? `Сохраняем выражение · ${Math.round(progress)}%`
-        : "Выражение записано"
+    alert(
+      "Не удалось запустить Face AI.\n\n"+
+      error.message+
+      "\n\nПроверь разрешение камеры и подключение к интернету."
     );
-
-    if (progress >= 100) {
-      currentStep++;
-      stepStart = performance.now();
-      beginStep();
-      return;
-    }
-  } catch (err) {
-    console.error(err);
-    setStatus("Ошибка анализа — попробуй ещё раз");
+  } finally {
+    $("start").disabled=false;
   }
-
-  timer = setTimeout(() => stepLoop(id), 120);
 }
 
-let stepStart = 0;
+function updateSteps(index) {
+  [...$("steps").children].forEach((el,i)=>{
+    el.className="step"+(i<index?" done":i===index?" current":"");
+  });
+}
 
 function beginStep() {
-  if (currentStep >= sequence.length) {
+  if(currentStep>=sequence.length){
     finishCalibration();
     return;
   }
 
-  stepStart = performance.now();
+  stepStart=performance.now();
+  const step=sequence[currentStep];
 
-  const step = sequence[currentStep];
-  $("calStep").textContent =
-    `STEP ${String(currentStep + 1).padStart(2, "0")} / 05`;
-  $("calTitle").textContent = step.title;
-  $("calDescription").textContent = step.description;
-  $("progressFill").style.width = "0%";
+  $("calStep").textContent=
+    `ЭТАП ${String(currentStep+1).padStart(2,"0")} / 05`;
+  $("calTitle").textContent=step.title;
+  $("calDescription").textContent=step.description;
+  $("progressFill").style.width="0%";
+
   updateSteps(currentStep);
   setStatus("Смотри в камеру и удерживай выражение…");
   stepLoop(generation);
 }
 
 async function detectExpression(input) {
-  const result = await faceapi
+  const result=await faceapi
     .detectSingleFace(
       input,
       new faceapi.TinyFaceDetectorOptions({
-        inputSize: 320,
-        scoreThreshold: 0.4
+        inputSize:320,
+        scoreThreshold:0.4
       })
     )
     .withFaceLandmarks()
     .withFaceExpressions();
 
-  return result || null;
+  return result||null;
+}
+
+async function stepLoop(id) {
+  if(id!==generation || !stream || busy)return;
+  busy=true;
+
+  try {
+    const result=await detectExpression(camCal);
+    if(id!==generation)return;
+
+    if(!result){
+      setStatus("Лицо не найдено — посмотри в камеру");
+      $("progressFill").style.width="0%";
+      stepStart=performance.now();
+    } else {
+      const step=sequence[currentStep];
+
+      calibrationData.push({
+        key:step.key,
+        expressions:result.expressions
+      });
+
+      const elapsed=performance.now()-stepStart;
+      const progress=Math.min(100,elapsed/3500*100);
+      $("progressFill").style.width=progress+"%";
+      setStatus(`Калибровка · ${Math.round(progress)}%`);
+
+      if(progress>=100){
+        currentStep++;
+        beginStep();
+        return;
+      }
+    }
+  } catch(error) {
+    console.error(error);
+    setStatus("Ошибка анализа кадра");
+  } finally {
+    busy=false;
+  }
+
+  if(id===generation && stream)timer=setTimeout(()=>stepLoop(id),120);
 }
 
 function finishCalibration() {
   clearTimeout(timer);
 
-  const neutral = calibrationData.filter(x => x.key === "neutral");
-  neutralReference = neutral.length ? neutral[neutral.length - 1] : null;
+  const neutral=calibrationData.filter(x=>x.key==="neutral");
+  neutralReference=neutral.length?neutral[neutral.length-1]:null;
 
-  running = true;
+  running=true;
   show("app");
 
-  $("calResult").textContent = "✓ Калибровка завершена";
-  $("calInfo").textContent =
-    `Записано образцов: ${calibrationData.length}. ` +
-    "Исходное выражение сохранено в памяти этой сессии.";
+  $("calResult").textContent="✓ Калибровка завершена";
+  $("calInfo").textContent=
+    `Сохранено образцов: ${calibrationData.length}. `+
+    "Исходные показатели сохранены в текущей сессии.";
 
-  $("status").textContent = "Система активна";
-  $("meshLabel").textContent = "Face mesh · 478 landmarks";
-
+  $("status").textContent="Система активна";
+  $("meshLabel").textContent="Face mesh";
   resizeCanvas();
   analysisLoop();
 }
 
 function resizeCanvas() {
-  const rect = canvas.getBoundingClientRect();
-  if (!rect.width || !rect.height) return;
+  const rect=canvas.getBoundingClientRect();
+  if(!rect.width||!rect.height)return;
 
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = Math.round(rect.width * dpr);
-  canvas.height = Math.round(rect.height * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  canvas.width=Math.round(rect.width*dpr);
+  canvas.height=Math.round(rect.height*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 
 function drawMesh(result) {
-  const rect = canvas.getBoundingClientRect();
-  const w = rect.width;
-  const h = rect.height;
+  const rect=canvas.getBoundingClientRect();
+  const w=rect.width,h=rect.height;
 
-  if (!w || !h) return;
+  ctx.clearRect(0,0,w,h);
 
-  ctx.clearRect(0, 0, w, h);
-  if (!showMesh || !result.faceLandmarks?.length) return;
+  if(!showMesh||!result.faceLandmarks?.length)return;
 
-  const points = result.faceLandmarks[0];
+  const points=result.faceLandmarks[0];
+  const connections=FaceLandmarker.FACE_LANDMARKS_TESSELATION;
 
-  // Соединяем треугольники плотной сетки MediaPipe.
-  const connections = FaceLandmarker.FACE_LANDMARKS_TESSELATION;
-
-  ctx.lineWidth = 0.55;
-  ctx.strokeStyle = "rgba(66,232,117,0.48)";
+  ctx.lineWidth=.55;
+  ctx.strokeStyle="rgba(66,232,117,.48)";
   ctx.beginPath();
 
-  for (const edge of connections) {
-    const a = points[edge.start];
-    const b = points[edge.end];
-    if (!a || !b) continue;
-
-    // Зеркальное видео: отражаем координаты X.
-    ctx.moveTo((1 - a.x) * w, a.y * h);
-    ctx.lineTo((1 - b.x) * w, b.y * h);
+  for(const edge of connections){
+    const a=points[edge.start],b=points[edge.end];
+    if(!a||!b)continue;
+    ctx.moveTo((1-a.x)*w,a.y*h);
+    ctx.lineTo((1-b.x)*w,b.y*h);
   }
 
   ctx.stroke();
+  ctx.fillStyle="#42e875";
 
-  // Точки ориентиров.
-  ctx.fillStyle = "#42e875";
-
-  for (let i = 0; i < points.length; i += 2) {
-    const p = points[i];
+  for(let i=0;i<points.length;i+=2){
+    const p=points[i];
     ctx.beginPath();
-    ctx.arc((1 - p.x) * w, p.y * h, 0.8, 0, Math.PI * 2);
+    ctx.arc((1-p.x)*w,p.y*h,.8,0,Math.PI*2);
     ctx.fill();
   }
 }
 
 function renderExpressions(expressions) {
-  const ranked = Object.entries(labels)
-    .map(([key, label]) => ({
-      key,
-      label,
-      value: expressions[key] || 0
-    }))
-    .sort((a, b) => b.value - a.value);
+  const ranked=Object.entries(labels)
+    .map(([key,label])=>({key,label,value:expressions[key]||0}))
+    .sort((a,b)=>b.value-a.value);
 
-  const best = ranked[0];
+  const best=ranked[0];
+  $("mainEmotion").textContent=best.label;
+  $("mainConf").textContent=
+    `Оценка модели: ${Math.round(best.value*100)}%`;
 
-  $("mainEmotion").textContent = best.label;
-  $("mainConf").textContent =
-    `Оценка выражения моделью: ${Math.round(best.value * 100)}%`;
-
-  $("emotionList").innerHTML = ranked.map(item => {
-    const value = Math.round(item.value * 100);
+  $("emotionList").innerHTML=ranked.map(item=>{
+    const value=Math.round(item.value*100);
     return `
       <div class="emotion">
         <div class="emotionTop">
@@ -573,86 +545,93 @@ function renderExpressions(expressions) {
 }
 
 async function analysisLoop() {
-  if (!running || busy) return;
-  busy = true;
+  if(!running||busy)return;
+  busy=true;
 
   try {
-    const now = performance.now();
+    const now=performance.now();
 
-    if (video.currentTime !== lastVideoTime) {
-      lastVideoTime = video.currentTime;
+    if(video.currentTime!==lastVideoTime){
+      lastVideoTime=video.currentTime;
 
-      const meshResult = landmarker.detectForVideo(video, now);
+      const meshResult=landmarker.detectForVideo(video,now);
       drawMesh(meshResult);
 
-      const expressionResult = await detectExpression(video);
-      if (!running) return;
+      const expressionResult=await detectExpression(video);
+      if(!running)return;
 
-      if (expressionResult) {
+      if(expressionResult){
         renderExpressions(expressionResult.expressions);
-        $("faceStatus").textContent = "ЛИЦО НАЙДЕНО";
-        $("meshLabel").textContent =
-          `Face mesh · ${meshResult.faceLandmarks[0]?.length || 0} точек`;
+        $("faceStatus").textContent="ЛИЦО НАЙДЕНО";
+        $("meshLabel").textContent=
+          `Face mesh · ${meshResult.faceLandmarks[0]?.length||0} точек`;
       } else {
-        $("faceStatus").textContent = "ПОИСК ЛИЦА";
-        $("meshLabel").textContent = "Лицо не обнаружено";
+        $("faceStatus").textContent="ПОИСК ЛИЦА";
+        $("meshLabel").textContent="Лицо не обнаружено";
+        $("mainEmotion").textContent="—";
+        $("mainConf").textContent="Посмотри в камеру";
       }
     }
-  } catch (err) {
-    console.error(err);
+  } catch(error) {
+    console.error("Ошибка анализа:",error);
+    $("status").textContent="Ошибка анализа";
   } finally {
-    busy = false;
+    busy=false;
   }
 
-  if (running) timer = setTimeout(analysisLoop, 60);
+  if(running)timer=setTimeout(analysisLoop,60);
 }
 
 function stopAll() {
   generation++;
-  running = false;
-  busy = false;
+  running=false;
+  busy=false;
   clearTimeout(timer);
+  stopStream();
 
-  if (stream) {
-    stream.getTracks().forEach(track => track.stop());
-    stream = null;
-  }
-
-  video.srcObject = null;
-  camCal.srcObject = null;
-
-  if (ctx) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-
+  const rect=canvas.getBoundingClientRect();
+  ctx.clearRect(0,0,rect.width,rect.height);
   show("welcome");
 }
 
-$("start").addEventListener("click", start);
-$("cancel").addEventListener("click", stopAll);
-$("stop").addEventListener("click", stopAll);
+$("start").addEventListener("click",start);
+$("cancel").addEventListener("click",stopAll);
+$("stop").addEventListener("click",stopAll);
 
-$("recalibrate").addEventListener("click", () => {
-  running = false;
+$("recalibrate").addEventListener("click",()=>{
+  running=false;
   clearTimeout(timer);
-  currentStep = 0;
-  calibrationData = [];
+  currentStep=0;
+  calibrationData=[];
   show("calibration");
   beginStep();
 });
 
-$("meshToggle").addEventListener("click", () => {
-  showMesh = !showMesh;
-  $("meshToggle").textContent = showMesh ? "Скрыть сетку" : "Показать сетку";
-  if (!showMesh) {
-    const rect = canvas.getBoundingClientRect();
-    ctx.clearRect(0, 0, rect.width, rect.height);
+$("meshToggle").addEventListener("click",()=>{
+  showMesh=!showMesh;
+  $("meshToggle").textContent=showMesh?"Скрыть сетку":"Показать сетку";
+
+  if(!showMesh){
+    const rect=canvas.getBoundingClientRect();
+    ctx.clearRect(0,0,rect.width,rect.height);
   }
 });
 
-window.addEventListener("resize", resizeCanvas);
-window.addEventListener("beforeunload", stopAll);
+window.addEventListener("resize",resizeCanvas);
 
+window.addEventListener("beforeunload",()=>{
+  generation++;
+  running=false;
+  clearTimeout(timer);
+  stopStream();
+});
+
+$("emotionList").innerHTML=Object.entries(labels).map(([key,label])=>`
+  <div class="emotion">
+    <div class="emotionTop"><span>${label}</span><span>—</span></div>
+    <div class="bar"><div class="fill"></div></div>
+  </div>
+`).join("");
 </script>
 </body>
 </html>
