@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080a09">
+<meta name="description" content="Локальный анализ мимики и сравнение лиц с выбранными фотографиями в браузере.">
 <title>face.ai — Facial Motion Lab</title>
 <style>
 .mode-grid{display:grid;grid-template-columns:1fr;gap:11px;margin-top:25px;text-align:left}
@@ -21,7 +22,17 @@
 .people-stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scaleX(-1)}
 #peopleOverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1)}
 .people-status{font-size:11px;color:var(--green);line-height:1.6;text-align:left}
+.profile-picker{display:flex;gap:12px;max-width:460px;margin:18px auto;text-align:left}
+.profile-upload{flex:1;min-width:0;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--panel)}
+.profile-upload label{display:block;font-size:12px;font-weight:650;margin-bottom:9px}
+.profile-upload input{width:100%;font:inherit;font-size:10px;color:var(--muted)}
+.profile-upload input::file-selector-button{margin-right:8px;padding:7px 9px;border:1px solid #31543a;border-radius:7px;background:#193021;color:var(--text);cursor:pointer}
+.profile-preview{display:none;width:56px;height:56px;object-fit:cover;border-radius:50%;margin:0 auto 9px;border:1px solid #31543a}
+.privacy-note{padding:11px 13px;border:1px solid #28342a;border-radius:10px;background:#101713;text-align:left}
+.error-message{color:#ffaaa3!important}
+[hidden]{display:none!important}
 @media(max-width:600px){.people-stage{aspect-ratio:4/3}.people-toolbar{align-items:flex-start;flex-direction:column}}
+@media(max-width:420px){.profile-picker{flex-direction:column}.profile-upload{display:grid;grid-template-columns:56px 1fr;align-items:center;column-gap:12px}.profile-upload label{grid-column:2;grid-row:1}.profile-upload input{grid-column:2;grid-row:2}.profile-preview{grid-column:1;grid-row:1/3;margin:0}}
 :root{--bg:#080a09;--panel:#101411;--line:#242c25;--green:#42e875;--text:#f2f5f2;--muted:#879188}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
 button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid var(--green);outline-offset:4px}button:disabled{opacity:.42;cursor:not-allowed}
@@ -64,10 +75,14 @@ button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid var(--
 <div class="logo">⌘</div><div class="brand">face<span>.</span>ai</div>
 <div class="eyebrow">РАСПОЗНАВАНИЕ ЛЮДЕЙ</div>
 <h1>Определение людей</h1>
-<p class="muted">Камера сравнивает лица с фотографиями Алисы и Матвея. Если совпадения нет, подпись не показывается.</p>
-<div class="people-toolbar"><div class="people-status" id="peopleStatus">Нажми «Запустить распознавание» и разреши доступ к камере.</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="secondary" id="stopPeople" hidden>Остановить</button><button class="secondary" id="backHome">← Назад</button><button class="primary" id="startPeople" style="width:auto;margin:0;padding:11px 14px">Открыть камеру</button></div></div>
+<p class="muted">Выбери портреты для сравнения. Анализ выполняется локально в браузере; фотографии не отправляются на сервер.</p>
+<div class="profile-picker" aria-label="Эталонные фотографии">
+<div class="profile-upload"><img class="profile-preview" id="alicePreview" alt="Предпросмотр фотографии Алисы"><label for="alicePhoto">Алиса</label><input id="alicePhoto" type="file" accept="image/*" aria-label="Выбрать фотографию Алисы"></div>
+<div class="profile-upload"><img class="profile-preview" id="matveyPreview" alt="Предпросмотр фотографии Матвея"><label for="matveyPhoto">Матвей</label><input id="matveyPhoto" type="file" accept="image/*" aria-label="Выбрать фотографию Матвея"></div>
+</div>
+<div class="people-toolbar"><div class="people-status" id="peopleStatus" role="status" aria-live="polite">Выбери чёткие фотографии лиц анфас, затем нажми «Открыть камеру».</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="secondary" id="stopPeople" hidden>Остановить</button><button class="secondary" id="backHome">← Назад</button><button class="primary" id="startPeople" style="width:auto;margin:0;padding:11px 14px">Открыть камеру</button></div></div>
 <div class="people-stage" id="peopleStage" hidden><video id="peopleVideo" autoplay playsinline muted></video><canvas id="peopleOverlay"></canvas></div>
-<p class="muted">Фотографии используются только для сравнения и не отображаются на экране.</p>
+<p class="muted privacy-note">Для более точного сравнения используй по одному хорошо освещённому портрету анфас на человека. Это экспериментальная демонстрация: ошибки распознавания возможны.</p>
 </div></section>
 
 <section id="calibration" class="screen"><div class="center">
@@ -345,24 +360,46 @@ async function loadPeopleModels(){
 }
 async function buildPeopleMatcher(){
  const profiles=[
-  {name:"Алиса",url:"./alisa.jpg"},
-  {name:"Матвей",url:"./matvey.jpg"}
+  {name:"Алиса",input:$("alicePhoto")},
+  {name:"Матвей",input:$("matveyPhoto")}
  ];
  const labeled=[];
  for(const profile of profiles){
-  const img=new Image();img.crossOrigin="anonymous";img.src=profile.url;
-  await new Promise((resolve,reject)=>{
-   img.onload=resolve;img.onerror=()=>reject(new Error(`Не удалось загрузить ${profile.url}. Проверь, что файл лежит рядом с index.html и имя совпадает.`));
-  });
+  const file=profile.input.files?.[0];
+  if(!file)throw new Error(`Выбери фотографию для профиля «${profile.name}».`);
+  if(!file.type.startsWith("image/"))throw new Error(`Файл профиля «${profile.name}» должен быть изображением.`);
+  if(file.size>10*1024*1024)throw new Error(`Фотография «${profile.name}» больше 10 МБ. Выбери файл поменьше.`);
+  const img=await loadImageFile(file);
   const detection=await faceapi.detectSingleFace(img,new faceapi.SsdMobilenetv1Options({minConfidence:.35})).withFaceLandmarks().withFaceDescriptor();
   if(!detection)throw new Error(`На фото ${profile.name} не удалось найти лицо. Загрузи чёткое фото анфас.`);
   labeled.push(new faceapi.LabeledFaceDescriptors(profile.name,[detection.descriptor]));
  }
  peopleMatcher=new faceapi.FaceMatcher(labeled,.52);
 }
+function loadImageFile(file){
+ return new Promise((resolve,reject)=>{
+  const url=URL.createObjectURL(file),img=new Image();
+  img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};
+  img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Не удалось открыть фотографию. Выбери другое изображение."))};
+  img.src=url;
+ });
+}
+function wirePhotoPreview(inputId,previewId){
+ $(inputId).addEventListener("change",event=>{
+  const file=event.target.files?.[0],preview=$(previewId);
+  if(preview.dataset.url)URL.revokeObjectURL(preview.dataset.url);
+  if(!file){preview.removeAttribute("src");preview.style.display="none";return}
+  if(!file.type.startsWith("image/")){event.target.value="";$("peopleStatus").textContent="Выбери файл изображения.";$("peopleStatus").classList.add("error-message");return}
+  const url=URL.createObjectURL(file);preview.dataset.url=url;preview.src=url;preview.style.display="block";
+ });
+}
+wirePhotoPreview("alicePhoto","alicePreview");wirePhotoPreview("matveyPhoto","matveyPreview");
 async function startPeople(){
  $("startPeople").disabled=true;
  try{
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error("Камера доступна только на HTTPS-сайте или localhost.");
+  if(!$("alicePhoto").files?.[0]||!$("matveyPhoto").files?.[0])throw new Error("Сначала выбери фотографии для Алисы и Матвея.");
+  $("peopleStatus").classList.remove("error-message");
   $("peopleStatus").textContent="Подготавливаем распознавание…";
   await loadPeopleModels();
   await buildPeopleMatcher();
@@ -381,9 +418,9 @@ async function startPeople(){
   peopleLoop();
  }catch(e){
   console.error(e);
-  $("peopleStatus").textContent="Ошибка: "+e.message;
+  $("peopleStatus").textContent="Не удалось запустить распознавание: "+e.message;
+  $("peopleStatus").classList.add("error-message");
   stopPeople();
-  alert("Не удалось запустить распознавание людей:\n"+e.message+"\n\nПроверь имена файлов, фотографии и доступ к камере.");
  }finally{$("startPeople").disabled=false}
 }
 function stopPeople(){
