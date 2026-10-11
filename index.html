@@ -2,1140 +2,657 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#080a09">
-  <title>Face AI</title>
-
-  <style>
-    :root {
-      --bg: #080a09;
-      --panel: #101411;
-      --line: #202821;
-      --green: #42e875;
-      --text: #f3f6f3;
-      --muted: #7d897f;
-      --font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    * { box-sizing: border-box; }
-
-    html, body {
-      margin: 0;
-      width: 100%;
-      min-height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font);
-    }
-
-    body { min-height: 100dvh; }
-
-    button { font: inherit; cursor: pointer; }
-
-    button:focus-visible {
-      outline: 2px solid var(--green);
-      outline-offset: 5px;
-    }
-
-    .screen {
-      min-height: 100dvh;
-      display: none;
-    }
-
-    .screen.active { display: flex; }
-
-    /* START */
-
-    #welcome {
-      align-items: center;
-      justify-content: center;
-      padding: 28px;
-    }
-
-    .start-content {
-      width: min(100%, 360px);
-      text-align: center;
-    }
-
-    .logo {
-      width: 66px;
-      height: 66px;
-      border: 1px solid #294632;
-      border-radius: 22px;
-      display: grid;
-      place-items: center;
-      margin: 0 auto 25px;
-      color: var(--green);
-      background: #101b13;
-      font-size: 28px;
-      box-shadow: 0 0 60px #42e8750b;
-    }
-
-    .wordmark {
-      font-size: 24px;
-      letter-spacing: -1px;
-      font-weight: 650;
-    }
-
-    .wordmark span { color: var(--green); }
-
-    .tagline {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 10px;
-      line-height: 1.7;
-    }
-
-    .start-button {
-      width: 100%;
-      margin-top: 33px;
-      padding: 16px 20px;
-      color: #071109;
-      background: var(--green);
-      border: none;
-      border-radius: 13px;
-      font-size: 13px;
-      font-weight: 750;
-      transition: transform .2s, background .2s;
-    }
-
-    .start-button:hover {
-      background: #66f58f;
-      transform: translateY(-2px);
-    }
-
-    .privacy {
-      color: #58645b;
-      font-size: 10px;
-      line-height: 1.7;
-      margin-top: 18px;
-    }
-
-    /* CALIBRATION */
-
-    #calibration {
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-
-    .calibration-card {
-      width: min(100%, 430px);
-      text-align: center;
-    }
-
-    .calibration-camera {
-      width: 210px;
-      height: 210px;
-      margin: 0 auto 30px;
-      border: 1px solid #29392d;
-      border-radius: 50%;
-      overflow: hidden;
-      position: relative;
-      background: #111712;
-    }
-
-    #calibrationVideo {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: scaleX(-1);
-    }
-
-    .calibration-ring {
-      position: absolute;
-      inset: 15px;
-      border: 1px solid #42e87599;
-      border-radius: 50%;
-      pointer-events: none;
-    }
-
-    .calibration-title {
-      font-size: 25px;
-      font-weight: 600;
-      letter-spacing: -.8px;
-    }
-
-    .calibration-description {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.8;
-      margin: 13px auto 22px;
-      max-width: 330px;
-    }
-
-    .progress {
-      height: 3px;
-      border-radius: 10px;
-      background: #202720;
-      overflow: hidden;
-      margin: 0 0 15px;
-    }
-
-    .progress-fill {
-      width: 0;
-      height: 100%;
-      background: var(--green);
-      transition: width .15s linear;
-    }
-
-    .calibration-status {
-      color: var(--green);
-      font-size: 11px;
-      min-height: 18px;
-    }
-
-    .cancel-button {
-      background: none;
-      border: 0;
-      color: var(--muted);
-      font-size: 11px;
-      margin-top: 22px;
-    }
-
-    /* MAIN APP */
-
-    #app {
-      flex-direction: column;
-      padding: 0 34px 22px;
-    }
-
-    .topbar {
-      height: 68px;
-      flex-shrink: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--line);
-      gap: 20px;
-    }
-
-    .mini-brand {
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: -.4px;
-    }
-
-    .mini-brand span { color: var(--green); }
-
-    .system-state {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 12px #42e87566;
-    }
-
-    .main-layout {
-      width: min(1500px, 100%);
-      margin: auto;
-      padding: 26px 0;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 310px;
-      gap: 22px;
-      flex: 1;
-      align-content: center;
-    }
-
-    .camera-panel {
-      min-width: 0;
-      overflow: hidden;
-      background: #0d100e;
-      border: 1px solid var(--line);
-      border-radius: 17px;
-    }
-
-    .camera-heading {
-      height: 53px;
-      padding: 0 17px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .section-name {
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .live-label {
-      font-size: 9px;
-      letter-spacing: 1.3px;
-      color: var(--green);
-    }
-
-    .video-stage {
-      width: 100%;
-      aspect-ratio: 16 / 10;
-      position: relative;
-      background: #080b09;
-      overflow: hidden;
-    }
-
-    #video {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      transform: scaleX(-1);
-    }
-
-    #faceCanvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-    }
-
-    .stage-hint {
-      position: absolute;
-      left: 15px;
-      bottom: 14px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      background: #080a09cc;
-      border: 1px solid #ffffff12;
-      color: #b7c0b9;
-      font-size: 10px;
-      pointer-events: none;
-    }
-
-    .stage-hint span { color: var(--green); }
-
-    .camera-footer {
-      padding: 13px 15px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .face-state {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .face-state strong {
-      color: var(--green);
-      font-weight: 550;
-    }
-
-    .controls {
-      display: flex;
-      gap: 8px;
-    }
-
-    .small-button {
-      padding: 9px 11px;
-      border-radius: 9px;
-      border: 1px solid #283129;
-      background: #121713;
-      color: #dce4dd;
-      font-size: 10px;
-      transition: border-color .2s;
-    }
-
-    .small-button:hover { border-color: var(--green); }
-
-    /* RIGHT PANEL */
-
-    .side {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      min-width: 0;
-    }
-
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 15px;
-      padding: 18px;
-    }
-
-    .card-heading {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 19px;
-    }
-
-    .card-title {
-      font-size: 12px;
-      font-weight: 650;
-    }
-
-    .card-index {
-      color: #5c695f;
-      font-size: 10px;
-    }
-
-    .emotion-main {
-      padding: 15px;
-      background: #131c15;
-      border: 1px solid #26382a;
-      border-radius: 12px;
-      margin-bottom: 20px;
-    }
-
-    .emotion-label {
-      font-size: 10px;
-      color: #8d9b90;
-      margin-bottom: 10px;
-    }
-
-    .emotion-result {
-      color: var(--green);
-      font-size: 23px;
-      font-weight: 600;
-      letter-spacing: -.8px;
-    }
-
-    .emotion-confidence {
-      font-size: 10px;
-      color: #8d9b90;
-      margin-top: 7px;
-    }
-
-    .emotion-row {
-      margin: 16px 0;
-    }
-
-    .emotion-row:last-child { margin-bottom: 0; }
-
-    .emotion-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      font-size: 11px;
-      margin-bottom: 8px;
-    }
-
-    .emotion-name { color: #dce4dd; }
-
-    .emotion-percent {
-      color: #8d9b90;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .bar {
-      height: 3px;
-      border-radius: 10px;
-      background: #283029;
-      overflow: hidden;
-    }
-
-    .bar-fill {
-      height: 100%;
-      width: 0%;
-      background: var(--green);
-      border-radius: inherit;
-      transition: width .22s ease;
-    }
-
-    .calibration-info {
-      display: flex;
-      align-items: flex-start;
-      gap: 11px;
-      font-size: 10px;
-      color: var(--muted);
-      line-height: 1.7;
-    }
-
-    .calibration-icon {
-      color: var(--green);
-      font-size: 15px;
-    }
-
-    .calibration-info strong {
-      color: #e5ece6;
-      font-weight: 550;
-    }
-
-    .bottom-note {
-      padding: 0 2px;
-      color: #5d685f;
-      font-size: 10px;
-      line-height: 1.7;
-    }
-
-    .hidden { display: none !important; }
-
-    @media (min-width: 1500px) {
-      #app { padding-left: 50px; padding-right: 50px; }
-      .main-layout { grid-template-columns: minmax(0, 1fr) 340px; }
-    }
-
-    @media (max-width: 850px) {
-      #app { padding: 0 16px 20px; }
-
-      .main-layout {
-        grid-template-columns: 1fr;
-        align-content: start;
-      }
-
-      .side {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .bottom-note { grid-column: 1 / -1; }
-    }
-
-    @media (max-width: 520px) {
-      .side { display: flex; }
-      .video-stage { aspect-ratio: 4 / 3; }
-      .camera-footer { align-items: flex-start; flex-direction: column; }
-      .controls { width: 100%; }
-      .small-button { flex: 1; }
-      .topbar { height: 58px; }
-      .system-state { font-size: 10px; }
-      .main-layout { padding-top: 16px; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        transition-duration: .01ms !important;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080a09">
+<title>face.ai — Facial Motion Lab</title>
+
+<style>
+:root {
+  --bg:#080a09;
+  --panel:#101411;
+  --line:#242c25;
+  --green:#42e875;
+  --text:#f2f5f2;
+  --muted:#879188;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  min-height:100vh;
+}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--green);outline-offset:4px}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex}
+#welcome,#calibration{align-items:center;justify-content:center;padding:24px}
+.center{width:min(430px,100%);text-align:center}
+.logo{
+  width:64px;height:64px;margin:0 auto 23px;
+  display:grid;place-items:center;border:1px solid #31543a;
+  border-radius:21px;background:#122017;color:var(--green);
+  font-size:28px;
+}
+.brand{font-size:25px;font-weight:700;letter-spacing:-1px}
+.brand span{color:var(--green)}
+.muted{color:var(--muted);font-size:12px;line-height:1.8}
+.primary{
+  width:100%;padding:15px;border:0;border-radius:12px;
+  background:var(--green);color:#071109;font-weight:750;
+  margin-top:26px;
+}
+.primary:disabled{opacity:.45;cursor:wait}
+.secondary{
+  padding:10px 13px;border:1px solid var(--line);
+  background:#131713;color:var(--text);border-radius:9px;font-size:11px;
+}
+#calibrationVideo{
+  width:190px;height:190px;object-fit:cover;transform:scaleX(-1);
+  border-radius:50%;border:1px solid #31543a;background:#111;
+  margin:0 auto 27px;display:block;
+}
+.eyebrow{font-size:10px;letter-spacing:2px;color:var(--green);margin-bottom:14px}
+h1{font-size:26px;letter-spacing:-1px;margin:0 0 12px}
+.progress{height:3px;background:#252d26;border-radius:8px;margin-top:25px;overflow:hidden}
+#progressFill{height:100%;width:0;background:var(--green);transition:width .2s}
+#calStatus{font-size:11px;color:var(--green);margin-top:13px;min-height:17px}
+.steps{display:flex;justify-content:center;gap:8px;margin-top:22px}
+.step{
+  width:8px;height:8px;border-radius:50%;background:#303830;
+}
+.step.done{background:var(--green)}
+.step.current{outline:3px solid #42e87525;background:var(--green)}
+#app{flex-direction:column;padding:0 30px 22px}
+header{
+  height:65px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--line);gap:12px;
+}
+header .brand{font-size:17px}
+.status{font-size:11px;color:var(--muted)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:8px}
+.layout{
+  width:min(1450px,100%);margin:auto;padding:25px 0;
+  display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:18px;
+  align-content:center;flex:1;
+}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;overflow:hidden}
+.heading{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--line)}
+.heading strong{font-size:12px}
+.heading span{font-size:10px;color:var(--green)}
+.stage{position:relative;background:#050706;aspect-ratio:16/10;overflow:hidden}
+#video{width:100%;height:100%;position:absolute;inset:0;object-fit:contain;transform:scaleX(-1)}
+#mesh{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.stage-label{
+  position:absolute;bottom:13px;left:13px;background:#080a09d9;
+  border:1px solid #ffffff14;padding:9px 11px;border-radius:8px;
+  color:#d6e2d8;font-size:10px;
+}
+.controls{display:flex;gap:8px;flex-wrap:wrap;padding:13px}
+.side{display:flex;flex-direction:column;gap:14px}
+.card{padding:17px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.card h2{font-size:12px;margin:0 0 18px}
+.bigEmotion{font-size:24px;color:var(--green);font-weight:650}
+.conf{font-size:10px;color:var(--muted);margin-top:7px}
+.emotion{margin-top:17px}
+.emotionTop{display:flex;justify-content:space-between;font-size:11px;margin-bottom:7px}
+.emotionTop span:last-child{color:var(--muted)}
+.bar{height:3px;background:#2b332c;border-radius:10px;overflow:hidden}
+.fill{height:100%;background:var(--green);width:0;transition:width .2s}
+.note{font-size:10px;line-height:1.8;color:var(--muted)}
+@media(max-width:850px){
+  #app{padding:0 14px 20px}
+  .layout{grid-template-columns:1fr;align-content:start}
+  .side{display:grid;grid-template-columns:1fr 1fr}
+  .note{grid-column:1/-1}
+}
+@media(max-width:520px){
+  .side{display:flex}
+  .stage{aspect-ratio:4/3}
+  .status{font-size:9px}
+}
+</style>
 </head>
-
 <body>
 
-  <!-- FIRST SCREEN: ONE BUTTON -->
-  <section id="welcome" class="screen active">
-    <div class="start-content">
-      <div class="logo">⌁</div>
-      <div class="wordmark">face<span>.</span>ai</div>
-      <div class="tagline">
-        Анализ лица и выражений в реальном времени
-      </div>
+<section id="welcome" class="screen active">
+  <div class="center">
+    <div class="logo">⌁</div>
+    <div class="brand">face<span>.</span>ai</div>
+    <p class="muted">Facial Motion Lab<br>Калибровка, лицевые ориентиры и анализ выражений</p>
+    <button class="primary" id="start">Начать калибровку</button>
+    <p class="muted">Камера включится после нажатия.<br>Видео обрабатывается в браузере.</p>
+  </div>
+</section>
 
-      <button class="start-button" id="start">
-        Запустить
-      </button>
-
-      <div class="privacy">
-        Камера включается только после твоего действия.<br>
-        Видео анализируется локально в браузере.
-      </div>
+<section id="calibration" class="screen">
+  <div class="center">
+    <div class="eyebrow" id="calStep">STEP 01 / 05</div>
+    <video id="calibrationVideo" autoplay playsinline muted></video>
+    <h1 id="calTitle">Нейтральное лицо</h1>
+    <p class="muted" id="calDescription">Смотри прямо в камеру и расслабь лицо.</p>
+    <div class="progress"><div id="progressFill"></div></div>
+    <div id="calStatus">Загрузка моделей…</div>
+    <div class="steps" id="steps">
+      <i class="step current"></i><i class="step"></i><i class="step"></i>
+      <i class="step"></i><i class="step"></i>
     </div>
-  </section>
+    <button class="secondary" id="cancel" style="margin-top:23px">Отмена</button>
+  </div>
+</section>
 
-  <!-- CALIBRATION SCREEN -->
-  <section id="calibration" class="screen">
-    <div class="calibration-card">
-      <div class="calibration-camera">
-        <video id="calibrationVideo" autoplay playsinline muted></video>
-        <div class="calibration-ring"></div>
+<section id="app" class="screen">
+  <header>
+    <div class="brand">face<span>.</span>ai</div>
+    <div class="status"><i class="dot"></i><span id="status">Система активна</span></div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="heading">
+        <strong>Facial landmark tracking</strong>
+        <span id="faceStatus">ПОИСК ЛИЦА</span>
       </div>
-
-      <div class="calibration-title" id="calibrationTitle">
-        Калибровка
+      <div class="stage" id="stage">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="mesh"></canvas>
+        <div class="stage-label" id="meshLabel">Ожидание лица</div>
       </div>
-
-      <div class="calibration-description" id="calibrationDescription">
-        Смотри прямо в камеру. Держи голову ровно и сохрани спокойное,
-        нейтральное выражение лица.
+      <div class="controls">
+        <button class="secondary" id="recalibrate">↻ Повторить калибровку</button>
+        <button class="secondary" id="meshToggle">Скрыть сетку</button>
+        <button class="secondary" id="stop">Выключить камеру</button>
       </div>
+    </section>
 
-      <div class="progress">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
-
-      <div class="calibration-status" id="calibrationStatus">
-        Подготовка камеры…
-      </div>
-
-      <button class="cancel-button" id="cancelCalibration">
-        Отмена
-      </button>
-    </div>
-  </section>
-
-  <!-- MAIN APP -->
-  <section id="app" class="screen">
-    <header class="topbar">
-      <div class="mini-brand">face<span>.</span>ai</div>
-      <div class="system-state">
-        <span class="dot"></span>
-        <span id="systemText">Система активна</span>
-      </div>
-    </header>
-
-    <main class="main-layout">
-      <section class="camera-panel">
-        <div class="camera-heading">
-          <div class="section-name">Камера</div>
-          <div class="live-label">● LIVE ANALYSIS</div>
-        </div>
-
-        <div class="video-stage" id="videoStage">
-          <video id="video" autoplay playsinline muted></video>
-          <canvas id="faceCanvas"></canvas>
-          <div class="stage-hint">
-            <span>●</span> <span id="trackingText">Поиск лица</span>
-          </div>
-        </div>
-
-        <div class="camera-footer">
-          <div class="face-state" id="faceState">
-            Лицо: <strong>ожидание</strong>
-          </div>
-
-          <div class="controls">
-            <button class="small-button" id="recalibrate">
-              ↻ Калибровка
-            </button>
-            <button class="small-button" id="stop">
-              Выключить
-            </button>
-          </div>
-        </div>
+    <aside class="side">
+      <section class="card">
+        <h2>Выражение лица</h2>
+        <div class="bigEmotion" id="mainEmotion">—</div>
+        <div class="conf" id="mainConf">Ожидание данных</div>
+        <div id="emotionList"></div>
       </section>
+      <section class="card">
+        <h2>Калибровка</h2>
+        <div class="bigEmotion" style="font-size:15px" id="calResult">Не выполнена</div>
+        <p class="note" id="calInfo">Система попросит показать пять выражений.</p>
+      </section>
+      <p class="note">
+        Сетка показывает геометрию лица, а не эмоции. Эмоции — приблизительные
+        оценки видимых выражений, не определение истинных чувств.
+      </p>
+    </aside>
+  </main>
+</section>
 
-      <aside class="side">
-        <section class="card">
-          <div class="card-heading">
-            <div class="card-title">Выражение лица</div>
-            <div class="card-index">01 / AI</div>
-          </div>
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
 
-          <div class="emotion-main">
-            <div class="emotion-label">Основное выражение</div>
-            <div class="emotion-result" id="mainEmotion">Ожидание</div>
-            <div class="emotion-confidence" id="mainConfidence">
-              Наведи лицо на камеру
-            </div>
-          </div>
+<script type="module">
+import {
+  FaceLandmarker,
+  FilesetResolver
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 
-          <div id="emotionList"></div>
-        </section>
+const $ = id => document.getElementById(id);
 
-        <section class="card">
-          <div class="card-heading">
-            <div class="card-title">Калибровка</div>
-            <div class="card-index">02 / SETUP</div>
-          </div>
+const screens = ["welcome", "calibration", "app"];
+const camCal = $("calibrationVideo");
+const video = $("video");
+const canvas = $("mesh");
+const ctx = canvas.getContext("2d");
 
-          <div class="calibration-info">
-            <div class="calibration-icon">✳</div>
-            <div>
-              <strong id="calibrationResult">Не выполнена</strong>
-              <div id="calibrationDetails" style="margin-top:5px">
-                Сначала система попросит посмотреть в камеру с нейтральным выражением.
-              </div>
-            </div>
-          </div>
-        </section>
+const labels = {
+  neutral: "Нейтрально",
+  happy: "Радость",
+  sad: "Грусть",
+  angry: "Злость",
+  surprised: "Удивление",
+  fearful: "Страх",
+  disgusted: "Отвращение"
+};
 
-        <div class="bottom-note">
-          Модель оценивает видимые выражения лица, а не реальное внутреннее
-          состояние человека. Результаты могут ошибаться.
+const sequence = [
+  {
+    title: "Нейтральное лицо",
+    description: "Расслабь лицо, закрой рот естественным образом и смотри прямо.",
+    key: "neutral"
+  },
+  {
+    title: "Улыбнись",
+    description: "Покажи естественную улыбку и удерживай её несколько секунд.",
+    key: "happy"
+  },
+  {
+    title: "Удивление",
+    description: "Подними брови и широко открой глаза, будто сильно удивился.",
+    key: "surprised"
+  },
+  {
+    title: "Грусть",
+    description: "Изобрази грустное выражение лица без резких движений.",
+    key: "sad"
+  },
+  {
+    title: "Злость",
+    description: "Нахмурь брови и изобрази сердитое выражение.",
+    key: "angry"
+  }
+];
+
+let stream = null;
+let landmarker = null;
+let running = false;
+let busy = false;
+let showMesh = true;
+let generation = 0;
+let timer = null;
+let lastVideoTime = -1;
+let currentStep = 0;
+let calibrationData = [];
+let neutralReference = null;
+let expressionDetectorReady = false;
+
+function show(id) {
+  screens.forEach(s => $(s).classList.toggle("active", s === id));
+}
+
+function setStatus(text) {
+  $("calStatus").textContent = text;
+}
+
+function updateSteps(index) {
+  [...$("steps").children].forEach((el, i) => {
+    el.className = "step" +
+      (i < index ? " done" : i === index ? " current" : "");
+  });
+}
+
+async function loadModels() {
+  if (landmarker && expressionDetectorReady) return;
+
+  $("status").textContent = "Загрузка моделей…";
+
+  const vision = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+  );
+
+  landmarker = await FaceLandmarker.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath:
+        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+      delegate: "GPU"
+    },
+    runningMode: "VIDEO",
+    numFaces: 1,
+    outputFaceBlendshapes: true
+  });
+
+  await Promise.all([
+    faceapi.nets.tinyFaceDetector.loadFromUri(
+      "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/"
+    ),
+    faceapi.nets.faceExpressionNet.loadFromUri(
+      "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/"
+    )
+  ]);
+
+  expressionDetectorReady = true;
+}
+
+async function openCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new Error("Открой сайт через HTTPS или localhost.");
+  }
+
+  stream = await navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: {
+      facingMode: "user",
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
+    }
+  });
+
+  camCal.srcObject = stream;
+  video.srcObject = stream;
+
+  await Promise.all([
+    waitForVideo(camCal),
+    waitForVideo(video)
+  ]);
+}
+
+function waitForVideo(el) {
+  return new Promise((resolve, reject) => {
+    if (el.readyState >= 2 && el.videoWidth) {
+      resolve();
+      return;
+    }
+
+    el.addEventListener("loadeddata", resolve, { once: true });
+    el.addEventListener("error", () => reject(
+      new Error("Не удалось получить изображение камеры.")
+    ), { once: true });
+  });
+}
+
+async function start() {
+  const id = ++generation;
+  $("start").disabled = true;
+  show("calibration");
+
+  try {
+    $("calTitle").textContent = "Подготовка";
+    $("calDescription").textContent =
+      "Загружаем модель сетки лица и анализ выражений.";
+    setStatus("Загрузка моделей…");
+
+    await loadModels();
+    if (id !== generation) return;
+
+    setStatus("Запрашиваем камеру…");
+    await openCamera();
+    if (id !== generation) return;
+
+    currentStep = 0;
+    calibrationData = [];
+    beginStep();
+  } catch (err) {
+    console.error(err);
+    stopAll();
+    show("welcome");
+    alert("Не удалось запустить Face AI: " + err.message);
+  } finally {
+    $("start").disabled = false;
+  }
+}
+
+function beginStep() {
+  if (currentStep >= sequence.length) {
+    finishCalibration();
+    return;
+  }
+
+  const step = sequence[currentStep];
+  $("calStep").textContent =
+    `STEP ${String(currentStep + 1).padStart(2, "0")} / 05`;
+  $("calTitle").textContent = step.title;
+  $("calDescription").textContent = step.description;
+  $("progressFill").style.width = "0%";
+  updateSteps(currentStep);
+
+  setStatus("Найди положение лица в кадре…");
+  stepLoop(generation);
+}
+
+async function stepLoop(id) {
+  if (id !== generation || !stream) return;
+
+  try {
+    const result = await detectExpression(camCal);
+
+    if (id !== generation) return;
+
+    if (!result) {
+      setStatus("Лицо не найдено — посмотри в камеру");
+      $("progressFill").style.width = "0%";
+      timer = setTimeout(() => stepLoop(id), 120);
+      return;
+    }
+
+    const step = sequence[currentStep];
+    const score = result.expressions[step.key] || 0;
+
+    // Сохраняем образцы, если лицо достаточно хорошо видно.
+    if (result.detection.score > 0.55) {
+      calibrationData.push({
+        key: step.key,
+        expressions: result.expressions,
+        landmarks: result.landmarks
+      });
+    }
+
+    const elapsed = performance.now() - stepStart;
+    const progress = Math.min(100, elapsed / 3500 * 100);
+    $("progressFill").style.width = progress + "%";
+
+    setStatus(
+      progress < 100
+        ? `Сохраняем выражение · ${Math.round(progress)}%`
+        : "Выражение записано"
+    );
+
+    if (progress >= 100) {
+      currentStep++;
+      stepStart = performance.now();
+      beginStep();
+      return;
+    }
+  } catch (err) {
+    console.error(err);
+    setStatus("Ошибка анализа — попробуй ещё раз");
+  }
+
+  timer = setTimeout(() => stepLoop(id), 120);
+}
+
+let stepStart = 0;
+
+function beginStep() {
+  if (currentStep >= sequence.length) {
+    finishCalibration();
+    return;
+  }
+
+  stepStart = performance.now();
+
+  const step = sequence[currentStep];
+  $("calStep").textContent =
+    `STEP ${String(currentStep + 1).padStart(2, "0")} / 05`;
+  $("calTitle").textContent = step.title;
+  $("calDescription").textContent = step.description;
+  $("progressFill").style.width = "0%";
+  updateSteps(currentStep);
+  setStatus("Смотри в камеру и удерживай выражение…");
+  stepLoop(generation);
+}
+
+async function detectExpression(input) {
+  const result = await faceapi
+    .detectSingleFace(
+      input,
+      new faceapi.TinyFaceDetectorOptions({
+        inputSize: 320,
+        scoreThreshold: 0.4
+      })
+    )
+    .withFaceLandmarks()
+    .withFaceExpressions();
+
+  return result || null;
+}
+
+function finishCalibration() {
+  clearTimeout(timer);
+
+  const neutral = calibrationData.filter(x => x.key === "neutral");
+  neutralReference = neutral.length ? neutral[neutral.length - 1] : null;
+
+  running = true;
+  show("app");
+
+  $("calResult").textContent = "✓ Калибровка завершена";
+  $("calInfo").textContent =
+    `Записано образцов: ${calibrationData.length}. ` +
+    "Исходное выражение сохранено в памяти этой сессии.";
+
+  $("status").textContent = "Система активна";
+  $("meshLabel").textContent = "Face mesh · 478 landmarks";
+
+  resizeCanvas();
+  analysisLoop();
+}
+
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function drawMesh(result) {
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
+
+  if (!w || !h) return;
+
+  ctx.clearRect(0, 0, w, h);
+  if (!showMesh || !result.faceLandmarks?.length) return;
+
+  const points = result.faceLandmarks[0];
+
+  // Соединяем треугольники плотной сетки MediaPipe.
+  const connections = FaceLandmarker.FACE_LANDMARKS_TESSELATION;
+
+  ctx.lineWidth = 0.55;
+  ctx.strokeStyle = "rgba(66,232,117,0.48)";
+  ctx.beginPath();
+
+  for (const edge of connections) {
+    const a = points[edge.start];
+    const b = points[edge.end];
+    if (!a || !b) continue;
+
+    // Зеркальное видео: отражаем координаты X.
+    ctx.moveTo((1 - a.x) * w, a.y * h);
+    ctx.lineTo((1 - b.x) * w, b.y * h);
+  }
+
+  ctx.stroke();
+
+  // Точки ориентиров.
+  ctx.fillStyle = "#42e875";
+
+  for (let i = 0; i < points.length; i += 2) {
+    const p = points[i];
+    ctx.beginPath();
+    ctx.arc((1 - p.x) * w, p.y * h, 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function renderExpressions(expressions) {
+  const ranked = Object.entries(labels)
+    .map(([key, label]) => ({
+      key,
+      label,
+      value: expressions[key] || 0
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  const best = ranked[0];
+
+  $("mainEmotion").textContent = best.label;
+  $("mainConf").textContent =
+    `Оценка выражения моделью: ${Math.round(best.value * 100)}%`;
+
+  $("emotionList").innerHTML = ranked.map(item => {
+    const value = Math.round(item.value * 100);
+    return `
+      <div class="emotion">
+        <div class="emotionTop">
+          <span>${item.label}</span><span>${value}%</span>
         </div>
-      </aside>
-    </main>
-  </section>
+        <div class="bar"><div class="fill" style="width:${value}%"></div></div>
+      </div>`;
+  }).join("");
+}
 
-  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+async function analysisLoop() {
+  if (!running || busy) return;
+  busy = true;
 
-  <script>
-    (() => {
-      "use strict";
+  try {
+    const now = performance.now();
 
-      const $ = id => document.getElementById(id);
+    if (video.currentTime !== lastVideoTime) {
+      lastVideoTime = video.currentTime;
 
-      const welcome = $("welcome");
-      const calibration = $("calibration");
-      const app = $("app");
+      const meshResult = landmarker.detectForVideo(video, now);
+      drawMesh(meshResult);
 
-      const video = $("video");
-      const calibrationVideo = $("calibrationVideo");
-      const canvas = $("faceCanvas");
-      const ctx = canvas.getContext("2d");
+      const expressionResult = await detectExpression(video);
+      if (!running) return;
 
-      const state = {
-        stream: null,
-        modelsReady: false,
-        busy: false,
-        running: false,
-        mode: "idle",
-        frameTimer: null,
-        lastDetection: null,
-        neutralBaseline: null,
-        calibrationSamples: [],
-        calibrationStart: 0,
-        lastFrame: 0,
-        generation: 0
-      };
-
-      const emotions = [
-        ["neutral", "Нейтрально"],
-        ["happy", "Радость"],
-        ["sad", "Грусть"],
-        ["angry", "Злость"],
-        ["surprised", "Удивление"],
-        ["fearful", "Страх"],
-        ["disgusted", "Отвращение"]
-      ];
-
-      function showScreen(screen) {
-        [welcome, calibration, app].forEach(el => {
-          el.classList.toggle("active", el === screen);
-        });
+      if (expressionResult) {
+        renderExpressions(expressionResult.expressions);
+        $("faceStatus").textContent = "ЛИЦО НАЙДЕНО";
+        $("meshLabel").textContent =
+          `Face mesh · ${meshResult.faceLandmarks[0]?.length || 0} точек`;
+      } else {
+        $("faceStatus").textContent = "ПОИСК ЛИЦА";
+        $("meshLabel").textContent = "Лицо не обнаружено";
       }
-
-      function setCalibrationStatus(text) {
-        $("calibrationStatus").textContent = text;
-      }
-
-      function showError(title, message) {
-        $("calibrationTitle").textContent = title;
-        $("calibrationDescription").textContent = message;
-        $("calibrationStatus").textContent = "Не удалось продолжить";
-        $("progressFill").style.width = "0%";
-      }
-
-      function stopStream() {
-        if (state.stream) {
-          state.stream.getTracks().forEach(track => track.stop());
-          state.stream = null;
-        }
-
-        video.srcObject = null;
-        calibrationVideo.srcObject = null;
-      }
-
-      async function loadModels() {
-        if (state.modelsReady) return;
-
-        if (typeof faceapi === "undefined") {
-          throw new Error("Не удалось загрузить библиотеку распознавания.");
-        }
-
-        const MODEL_URL =
-          "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
-
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
-          faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
-        ]);
-
-        state.modelsReady = true;
-      }
-
-      async function openCamera() {
-        if (!navigator.mediaDevices?.getUserMedia) {
-          throw new Error(
-            "Камера недоступна. Открой сайт через HTTPS или localhost."
-          );
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            facingMode: "user",
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 30, max: 30 }
-          }
-        });
-
-        state.stream = stream;
-        video.srcObject = stream;
-        calibrationVideo.srcObject = stream;
-
-        await Promise.all([
-          new Promise((resolve, reject) => {
-            if (video.readyState >= 2 && video.videoWidth) {
-              resolve();
-              return;
-            }
-
-            video.addEventListener("loadedmetadata", resolve, { once: true });
-            video.addEventListener("error", reject, { once: true });
-          }),
-          new Promise((resolve, reject) => {
-            if (calibrationVideo.readyState >= 2 &&
-                calibrationVideo.videoWidth) {
-              resolve();
-              return;
-            }
-
-            calibrationVideo.addEventListener(
-              "loadedmetadata", resolve, { once: true }
-            );
-            calibrationVideo.addEventListener(
-              "error", reject, { once: true }
-            );
-          })
-        ]);
-
-        await Promise.all([video.play(), calibrationVideo.play()]);
-      }
-
-      async function start() {
-        if (state.mode !== "idle") return;
-
-        const generation = ++state.generation;
-        state.mode = "starting";
-        showScreen(calibration);
-
-        $("calibrationTitle").textContent = "Подготовка";
-        $("calibrationDescription").textContent =
-          "Загружаем модель распознавания и подключаем камеру.";
-        setCalibrationStatus("Загрузка AI-модели…");
-
-        try {
-          await loadModels();
-          if (generation !== state.generation) return;
-
-          setCalibrationStatus("Подключение камеры…");
-          await openCamera();
-          if (generation !== state.generation) return;
-
-          beginCalibration();
-        } catch (error) {
-          if (generation !== state.generation) return;
-
-          console.error(error);
-          stopStream();
-          state.mode = "idle";
-
-          showError(
-            "Не удалось запустить",
-            error.name === "NotAllowedError"
-              ? "Разреши доступ к камере в браузере и попробуй снова."
-              : error.message || "Проверь интернет, камеру и разрешения браузера."
-          );
-
-          $("cancelCalibration").textContent = "Вернуться";
-          $("cancelCalibration").onclick = () => {
-            $("cancelCalibration").onclick = null;
-            $("cancelCalibration").textContent = "Отмена";
-            showScreen(welcome);
-          };
-        }
-      }
-
-      function beginCalibration() {
-        state.mode = "calibrating";
-        state.calibrationSamples = [];
-        state.calibrationStart = performance.now();
-
-        $("calibrationTitle").textContent = "Смотри прямо";
-        $("calibrationDescription").textContent =
-          "Держи голову ровно и сохрани нейтральное выражение лица. " +
-          "Система найдёт лицо и запомнит исходные показатели.";
-        setCalibrationStatus("Поиск лица…");
-        $("progressFill").style.width = "0%";
-
-        calibrationLoop();
-      }
-
-      async function detect(input) {
-        return faceapi
-          .detectSingleFace(
-            input,
-            new faceapi.TinyFaceDetectorOptions({
-              inputSize: 320,
-              scoreThreshold: 0.45
-            })
-          )
-          .withFaceLandmarks(true)
-          .withFaceExpressions();
-      }
-
-      async function calibrationLoop() {
-        if (state.mode !== "calibrating" || state.busy) return;
-
-        state.busy = true;
-
-        try {
-          const result = await detect(calibrationVideo);
-
-          if (state.mode !== "calibrating") return;
-
-          if (!result) {
-            setCalibrationStatus("Помести лицо в центр кадра…");
-            $("progressFill").style.width = "0%";
-            state.calibrationStart = performance.now();
-            state.calibrationSamples = [];
-          } else {
-            const elapsed = performance.now() - state.calibrationStart;
-            const progress = Math.min(100, elapsed / 4000 * 100);
-
-            $("progressFill").style.width = progress + "%";
-            setCalibrationStatus(
-              progress < 100
-                ? "Калибровка нейтрального выражения…"
-                : "Завершение…"
-            );
-
-            if (elapsed >= 4000) {
-              state.calibrationSamples.push(result.expressions);
-
-              if (state.calibrationSamples.length >= 2) {
-                finishCalibration();
-                return;
-              }
-            }
-          }
-        } catch (error) {
-          console.error(error);
-          setCalibrationStatus("Ошибка анализа кадра");
-        } finally {
-          state.busy = false;
-        }
-
-        if (state.mode === "calibrating") {
-          state.frameTimer = setTimeout(calibrationLoop, 120);
-        }
-      }
-
-      function finishCalibration() {
-        const samples = state.calibrationSamples;
-
-        const baseline = {};
-        for (const [key] of emotions) {
-          baseline[key] = samples.reduce(
-            (sum, sample) => sum + (sample[key] || 0), 0
-          ) / samples.length;
-        }
-
-        state.neutralBaseline = baseline;
-        state.mode = "running";
-        state.running = true;
-
-        $("calibrationResult").textContent = "Калибровка выполнена";
-        $("calibrationDetails").textContent =
-          "Исходные показатели сохранены в памяти текущей сессии.";
-        $("systemText").textContent = "Система активна";
-
-        showScreen(app);
-        resizeCanvas();
-        analysisLoop();
-      }
-
-      function resizeCanvas() {
-        const rect = video.getBoundingClientRect();
-        if (!rect.width || !rect.height) return;
-
-        canvas.width = Math.round(rect.width);
-        canvas.height = Math.round(rect.height);
-      }
-
-      function drawFace(result) {
-        resizeCanvas();
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (!result) return;
-
-        const resized = faceapi.resizeResults(result, {
-          width: canvas.width,
-          height: canvas.height
-        });
-
-        const box = resized.detection.box;
-        const x = box.x;
-        const y = box.y;
-        const w = box.width;
-        const h = box.height;
-
-        ctx.save();
-
-        // Видео зеркальное, поэтому координаты рамки тоже отражаем.
-        const bx = canvas.width - x - w;
-
-        ctx.strokeStyle = "#42e875";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(bx, y, w, h);
-
-        const corner = Math.min(20, w * 0.12);
-
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-
-        // Верхние углы.
-        ctx.moveTo(bx, y + corner);
-        ctx.lineTo(bx, y);
-        ctx.lineTo(bx + corner, y);
-
-        ctx.moveTo(bx + w - corner, y);
-        ctx.lineTo(bx + w, y);
-        ctx.lineTo(bx + w, y + corner);
-
-        // Нижние углы.
-        ctx.moveTo(bx, y + h - corner);
-        ctx.lineTo(bx, y + h);
-        ctx.lineTo(bx + corner, y + h);
-
-        ctx.moveTo(bx + w - corner, y + h);
-        ctx.lineTo(bx + w, y + h);
-        ctx.lineTo(bx + w, y + h - corner);
-
-        ctx.stroke();
-
-        // 68 лицевых ориентиров.
-        const points = resized.landmarks.positions;
-
-        ctx.fillStyle = "#42e875";
-        for (const point of points) {
-          const px = canvas.width - point.x;
-          ctx.beginPath();
-          ctx.arc(px, point.y, 1.7, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        ctx.restore();
-      }
-
-      function renderExpressions(expressions) {
-        const ranked = emotions
-          .map(([key, label]) => ({
-            key,
-            label,
-            score: Math.max(0, Math.min(1, expressions[key] || 0))
-          }))
-          .sort((a, b) => b.score - a.score);
-
-        const best = ranked[0];
-
-        $("mainEmotion").textContent = best.label;
-        $("mainConfidence").textContent =
-          `Оценка модели: ${Math.round(best.score * 100)}%`;
-
-        $("emotionList").innerHTML = ranked.map(item => {
-          const pct = Math.round(item.score * 100);
-
-          return `
-            <div class="emotion-row">
-              <div class="emotion-top">
-                <span class="emotion-name">${item.label}</span>
-                <span class="emotion-percent">${pct}%</span>
-              </div>
-              <div class="bar">
-                <div class="bar-fill" style="width:${pct}%"></div>
-              </div>
-            </div>
-          `;
-        }).join("");
-      }
-
-      async function analysisLoop() {
-        if (!state.running || state.busy) return;
-
-        state.busy = true;
-
-        try {
-          const result = await detect(video);
-
-          if (!state.running) return;
-
-          state.lastDetection = result || null;
-          drawFace(result);
-
-          if (result) {
-            renderExpressions(result.expressions);
-
-            $("faceState").innerHTML =
-              'Лицо: <strong>обнаружено</strong>';
-            $("trackingText").textContent = "Лицо отслеживается";
-          } else {
-            $("faceState").innerHTML =
-              'Лицо: <strong>не найдено</strong>';
-            $("trackingText").textContent = "Поиск лица";
-            $("mainEmotion").textContent = "—";
-            $("mainConfidence").textContent =
-              "Посмотри в камеру";
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-          }
-        } catch (error) {
-          console.error("Ошибка анализа:", error);
-        } finally {
-          state.busy = false;
-        }
-
-        if (state.running) {
-          state.frameTimer = setTimeout(analysisLoop, 100);
-        }
-      }
-
-      function cancel() {
-        state.generation++;
-        state.mode = "idle";
-        state.running = false;
-        state.busy = false;
-
-        clearTimeout(state.frameTimer);
-        stopStream();
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        showScreen(welcome);
-      }
-
-      $("start").addEventListener("click", start);
-
-      $("cancelCalibration").addEventListener("click", cancel);
-
-      $("stop").addEventListener("click", cancel);
-
-      $("recalibrate").addEventListener("click", () => {
-        if (!state.stream) {
-          start();
-          return;
-        }
-
-        state.running = false;
-        state.mode = "calibrating";
-        clearTimeout(state.frameTimer);
-
-        showScreen(calibration);
-        beginCalibration();
-      });
-
-      window.addEventListener("resize", () => {
-        if (state.running) drawFace(state.lastDetection);
-      });
-
-      window.addEventListener("beforeunload", () => {
-        state.generation++;
-        state.running = false;
-        clearTimeout(state.frameTimer);
-        stopStream();
-      });
-
-      // Первоначально эмоции не показываются:
-      // пользователь сначала запускает систему и проходит калибровку.
-      $("emotionList").innerHTML = emotions.map(([key, label]) => `
-        <div class="emotion-row">
-          <div class="emotion-top">
-            <span class="emotion-name">${label}</span>
-            <span class="emotion-percent">—</span>
-          </div>
-          <div class="bar"><div class="bar-fill"></div></div>
-        </div>
-      `).join("");
-
-    })();
-  </script>
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    busy = false;
+  }
+
+  if (running) timer = setTimeout(analysisLoop, 60);
+}
+
+function stopAll() {
+  generation++;
+  running = false;
+  busy = false;
+  clearTimeout(timer);
+
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+
+  video.srcObject = null;
+  camCal.srcObject = null;
+
+  if (ctx) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  show("welcome");
+}
+
+$("start").addEventListener("click", start);
+$("cancel").addEventListener("click", stopAll);
+$("stop").addEventListener("click", stopAll);
+
+$("recalibrate").addEventListener("click", () => {
+  running = false;
+  clearTimeout(timer);
+  currentStep = 0;
+  calibrationData = [];
+  show("calibration");
+  beginStep();
+});
+
+$("meshToggle").addEventListener("click", () => {
+  showMesh = !showMesh;
+  $("meshToggle").textContent = showMesh ? "Скрыть сетку" : "Показать сетку";
+  if (!showMesh) {
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+  }
+});
+
+window.addEventListener("resize", resizeCanvas);
+window.addEventListener("beforeunload", stopAll);
+
+</script>
 </body>
 </html>
