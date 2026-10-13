@@ -1,159 +1,262 @@
-<!DOCTYPE html>
-<html lang="ru" data-theme="light" data-theme-pref="light">
+<!doctype html>
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f5f7fa">
-  <meta name="description" content="Локальное распознавание лиц в браузере. Видео и фотографии обрабатываются на устройстве.">
-  <title>Face AI — анализ мимики</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>Face AI — распознавание лиц</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/build/commonjs/face-api.js"></script>
   <style>
-    /* Минималистичная светлая тема */
-    :root,[data-theme="light"] {
-      color-scheme: light;
-      --bg: #f5f7fa;
-      --text: #172033;
-      --muted: #667085;
-      --field: #fff;
-      --line: #e3e7ee;
-      --glass-rgb: 255,255,255;
-      --glass-brd: #e3e7ee;
-      --hl: transparent;
-      --shadow: 0 1px 3px rgba(16,24,40,.06);
-      --accent-text: var(--accent);
-      --r: 12px;
-    }
-
-    html,body {
-      background: #f5f7fa !important;
-      color: #172033;
-      transition: none;
-    }
-
-    body {
-      font-family: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
-      letter-spacing: 0;
-    }
-
-    .bg,.blob,#themeSeg,.mode-card#startEmotion {
-      display: none !important;
-    }
-
-    .glass,.glass:hover,.glass::before,.glass::after {
-      background: #fff !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      border: 1px solid #e3e7ee !important;
-      box-shadow: 0 1px 3px rgba(16,24,40,.06) !important;
-    }
-
-    .glass::before,.glass::after {
-      display: none !important;
-    }
-
-    .topbar {
-      border-radius: 14px !important;
-      padding: 8px 14px !important;
-    }
-
-    .logo,.logo-mini {
-      border-radius: 12px !important;
-      background: #1769d2 !important;
-      box-shadow: none !important;
-    }
-
-    .mode-card {
-      border-radius: 12px !important;
-      transition: border-color .15s,background .15s !important;
-    }
-
-    .mode-card:hover {
-      transform: none !important;
-      border-color: #1769d2 !important;
-      background: #f8fbff !important;
-    }
-
-    .btn,.icon-btn {
-      border-radius: 9px !important;
-      box-shadow: none !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      transition: background .15s,border-color .15s,color .15s !important;
-    }
-
-    .btn:hover:not(:disabled),.icon-btn:hover {
-      transform: none !important;
-    }
-
-    .btn.primary {
-      background: #1769d2 !important;
-      border-color: #1769d2 !important;
-      box-shadow: none !important;
-    }
-
-    .btn.primary:hover:not(:disabled) {
-      background: #1059b8 !important;
-    }
-
-    .stage,.camera-circle video {
-      box-shadow: none !important;
-    }
-
-    .stage-label,.stage-fps,.pause-badge {
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      background: rgba(16,24,40,.78) !important;
-    }
-
-    .hero-emoji,.cal-emoji {
-      display: none !important;
-    }
-
-    .screen.active {
-      animation: none !important;
-    }
-
-    @media(prefers-reduced-motion:reduce) {
-      *,*::before,*::after {
-        animation-duration: .01ms !important;
-        animation-iteration-count: 1 !important;
-        scroll-behavior: auto !important;
-        transition-duration: .01ms !important;
-      }
-    }
+    :root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#202123;background:#fff;font-synthesis:none;text-rendering:optimizeLegibility;--line:#e5e7eb;--muted:#6b7280;--soft:#f7f7f8;--green:#10a37f;--red:#b42318}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}
+    .app{min-height:100vh;display:grid;grid-template-columns:248px minmax(0,1fr)}
+    aside{height:100vh;position:sticky;top:0;border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:20px;background:#fff}
+    .brand{display:flex;align-items:center;gap:10px;padding:4px 10px;font-size:15px;font-weight:650;letter-spacing:-.02em}.brand-mark{width:27px;height:27px;border:1.5px solid #303030;border-radius:9px;display:grid;place-items:center;font-size:13px;font-weight:700}
+    .nav-label{padding:0 10px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em}.nav-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;color:#303030;font-size:13px}.nav-item.active{background:var(--soft);font-weight:600}.nav-item svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+    .side-note{margin-top:auto;padding:12px 10px;color:var(--muted);font-size:11px;line-height:1.55;border-top:1px solid var(--line)}
+    main{min-width:0}.topbar{height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;background:rgba(255,255,255,.95);z-index:5}.topbar-title{font-size:13px;font-weight:600}.status{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}.dot{width:7px;height:7px;background:#9ca3af;border-radius:50%}.dot.ready{background:var(--green)}.dot.busy{background:#d97706}.dot.error{background:var(--red)}
+    .content{width:min(1060px,100%);margin:0 auto;padding:46px 30px 60px}.intro{margin-bottom:28px}.intro h1{margin:0 0 8px;font-size:26px;letter-spacing:-.04em;font-weight:650}.intro p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
+    .workspace{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(260px,.8fr);gap:18px;align-items:start}.panel{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}.panel-head{height:52px;padding:0 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}.panel-head h2{font-size:13px;margin:0;font-weight:600}.head-actions{display:flex;gap:8px;align-items:center}
+    .video-wrap{position:relative;margin:14px;background:#f2f3f5;aspect-ratio:16/10;border-radius:8px;overflow:hidden;display:grid;place-items:center}.video-wrap video,.video-wrap canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.video-wrap video{display:none}.video-wrap canvas{pointer-events:none}.placeholder{max-width:300px;text-align:center;padding:20px;color:var(--muted);font-size:13px;line-height:1.6}.placeholder strong{display:block;color:#303030;font-size:14px;font-weight:600;margin-bottom:5px}.camera-icon{width:38px;height:38px;border:1px solid #d1d5db;border-radius:11px;margin:0 auto 14px;display:grid;place-items:center;color:#555}.camera-icon svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7}
+    .toolbar{padding:0 14px 14px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;background:#fff;color:#303030;font-size:12px;font-weight:550}.btn:hover:not(:disabled){background:#f8f8f8}.btn.primary{background:#202123;color:#fff;border-color:#202123}.btn.primary:hover:not(:disabled){background:#38393b}.btn.ghost{border-color:transparent}.btn.danger{color:var(--red)}
+    .right-col{display:grid;gap:14px}.section{padding:15px}.section-title{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;font-size:13px;font-weight:600}.section-title small{font-size:11px;color:var(--muted);font-weight:400}.people-list{display:grid;gap:7px}.person{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--line);border-radius:8px;min-width:0}.avatar{width:32px;height:32px;border-radius:50%;background:#f1f2f3;object-fit:cover;flex:none}.person-info{min-width:0;flex:1}.person-name{font-size:12px;font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.person-meta{font-size:10px;color:var(--muted);margin-top:3px}.remove{border:0;background:transparent;color:#9ca3af;padding:5px;font-size:15px}.remove:hover{color:var(--red)}.empty{font-size:12px;line-height:1.55;color:var(--muted);padding:12px 2px}.result{min-height:58px;padding:12px;border-radius:8px;background:var(--soft);font-size:12px;line-height:1.55}.result strong{display:block;font-size:13px;margin-bottom:3px}.result small{color:var(--muted)}.settings-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px}.settings-row input{width:90px;border:1px solid var(--line);border-radius:7px;padding:7px;background:white}.notice{margin-top:12px;color:var(--muted);font-size:11px;line-height:1.55}
+    .log{list-style:none;padding:0;margin:0;display:grid;gap:8px;max-height:180px;overflow:auto}.log li{display:flex;justify-content:space-between;gap:10px;color:#444;font-size:11px}.log time{color:#9ca3af;white-space:nowrap}
+    dialog{width:min(400px,calc(100% - 28px));padding:0;border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 60px #0002}dialog::backdrop{background:#11182766}.modal{padding:20px}.modal h2{font-size:16px;margin:0 0 16px}.field{display:grid;gap:7px;margin-bottom:13px}.field label{font-size:12px;font-weight:550}.field input{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:9px 10px;font-size:13px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.form-note{font-size:11px;min-height:16px;color:var(--muted);line-height:1.5}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:20;background:#202123;color:white;border-radius:8px;padding:10px 14px;font-size:12px;box-shadow:0 5px 20px #0002}.hidden{display:none!important}
+    @media(max-width:850px){.app{grid-template-columns:64px minmax(0,1fr)}aside{padding:16px 8px;align-items:center}.brand{padding:4px}.brand-name,.nav-label,.nav-text,.side-note{display:none}.nav-item{justify-content:center;width:42px;height:42px;padding:0}.workspace{grid-template-columns:1fr}.right-col{grid-template-columns:1fr 1fr}.right-col .panel:last-child{grid-column:1/-1}.content{padding:32px 20px 48px}}
+    @media(max-width:560px){.app{display:block}aside{display:none}.topbar{padding:0 16px}.content{padding:26px 14px 40px}.intro h1{font-size:22px}.right-col{grid-template-columns:1fr}.right-col .panel:last-child{grid-column:auto}.video-wrap{aspect-ratio:4/3;margin:10px}.toolbar{padding:0 10px 10px}.btn{padding:8px 10px}}
   </style>
 </head>
 <body>
-  <header class="topbar glass">
-    <button class="brand-btn" id="brandHome" aria-label="На главную">
-      <span class="logo-mini">F</span>
-      <span class="brand">face<span>.</span>ai</span>
-    </button>
-
-    <div class="pill" id="pill" data-state="idle" role="status">
-      <i class="dot"></i>
-      <span id="status">Готов к запуску</span>
+<div class="app">
+  <aside>
+    <div class="brand"><span class="brand-mark">F</span><span class="brand-name">Face AI</span></div>
+    <div class="nav-label">Рабочее пространство</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24"><path d="M3 7h3l2-3h8l2 3h3v12H3z"/><circle cx="12" cy="13" r="4"/></svg><span class="nav-text">Распознавание</span></div>
+    <div class="side-note">Обработка выполняется в браузере. Видео и изображения не отправляются на сервер.</div>
+  </aside>
+  <main>
+    <header class="topbar"><div class="topbar-title">Распознавание лиц</div><div class="status"><i class="dot" id="statusDot"></i><span id="statusText">Готово</span></div></header>
+    <div class="content">
+      <div class="intro"><h1>Распознавание лиц</h1><p>Добавьте профили, включите камеру и распознавайте знакомые лица. Нейросетевая модель работает локально в браузере.</p></div>
+      <div class="workspace">
+        <section class="panel">
+          <div class="panel-head"><h2>Камера</h2><div class="head-actions"><button class="btn ghost" id="snapshotBtn" disabled>Снимок</button></div></div>
+          <div class="video-wrap" id="videoWrap">
+            <video id="video" autoplay muted playsinline></video><canvas id="overlay"></canvas>
+            <div class="placeholder" id="placeholder"><div class="camera-icon"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="4"/></svg></div><strong>Камера выключена</strong>Нажмите «Включить камеру», чтобы начать распознавание.</div>
+          </div>
+          <div class="toolbar"><button class="btn primary" id="startBtn">Включить камеру</button><button class="btn" id="stopBtn" disabled>Выключить</button><button class="btn" id="addCaptureBtn" disabled>Добавить лицо из кадра</button></div>
+        </section>
+        <div class="right-col">
+          <section class="panel"><div class="section"><h2 class="section-title">Результат</h2><div class="result" id="result"><strong>Ожидание</strong><small>После запуска камеры здесь появится результат.</small></div><p class="notice" id="modelNotice">Модели нейросети загружаются при первом запуске. Для работы требуется интернет.</p></div></section>
+          <section class="panel"><div class="section"><h2 class="section-title">Профили <small id="profileCount">0</small></h2><div class="people-list" id="peopleList"></div><div class="toolbar" style="padding:12px 0 0"><button class="btn" id="addPhotoBtn">Добавить по фото</button><input class="hidden" id="photoInput" type="file" accept="image/*"></div></div></section>
+          <section class="panel"><div class="section"><h2 class="section-title">Параметры</h2><div class="settings-row"><label for="threshold">Строгость совпадения</label><input id="threshold" type="number" min="0.35" max="0.75" step="0.01" value="0.52"></div><p class="notice">Меньшее значение снижает риск ошибочного совпадения, но может чаще не узнавать человека.</p></div></section>
+          <section class="panel"><div class="section"><h2 class="section-title">События <button class="btn ghost" id="clearLog">Очистить</button></h2><ul class="log" id="log"><li class="empty">Событий пока нет.</li></ul></div></section>
+        </div>
+      </div>
     </div>
+  </main>
+</div>
+<dialog id="personDialog"><form class="modal" id="personForm"><h2>Добавить профиль</h2><div class="field"><label for="personName">Имя</label><input id="personName" maxlength="40" required autocomplete="off" placeholder="Например, Алексей"></div><div class="form-note" id="formNote">Для надёжного распознавания используйте чёткое фото анфас.</div><div class="modal-actions"><button class="btn" type="button" id="cancelAdd">Отмена</button><button class="btn primary" type="submit" id="savePerson">Сохранить профиль</button></div></form></dialog>
+<div class="toast hidden" id="toast"></div>
+<script>
+(() => {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const MODEL_URL = "https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights";
+  const STORAGE_KEY = "face-ai-profiles-v1";
+  const video = $("video"), overlay = $("overlay"), ctx = overlay.getContext("2d");
+  let stream = null, running = false, busy = false, timer = null, modelPromise = null;
+  let profiles = loadProfiles(), lastSeen = new Map(), lastToast = 0;
+  const thresholdInput = $("threshold");
 
-    <div class="top-actions">
-      <button class="icon-btn" id="openSettings" title="Настройки" aria-label="Настройки">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
-        </svg>
-      </button>
-      <button class="icon-btn" id="openHelp" title="Горячие клавиши (?)" aria-label="Горячие клавиши">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="9.5"/>
-          <path d="M9.2 9.3a3 3 0 1 1 4.3 2.7c-.9.5-1.5 1-1.5 2"/>
-          <path d="M12 17.3h.01"/>
-        </svg>
-      </button>
-    </div>
-  </header>
+  function loadProfiles(){
+    try { const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); return Array.isArray(data) ? data : []; }
+    catch { return []; }
+  }
+  function saveProfiles(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles)); }
+    catch { toast("Не удалось сохранить профили. Возможно, переполнено хранилище браузера."); }
+  }
+  function toast(message){
+    const el = $("toast"); el.textContent = message; el.classList.remove("hidden");
+    clearTimeout(lastToast); lastToast = setTimeout(() => el.classList.add("hidden"), 3000);
+  }
+  function setStatus(message, state=""){
+    $("statusText").textContent = message; $("statusDot").className = "dot" + (state ? " " + state : "");
+  }
+  function escapeHtml(value){
+    return String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+  }
+  function renderProfiles(){
+    const list = $("peopleList"); $("profileCount").textContent = String(profiles.length);
+    if (!profiles.length){ list.innerHTML = '<div class="empty">Профилей пока нет. Добавьте фото или снимок с камеры.</div>'; return; }
+    list.innerHTML = profiles.map(p => `<div class="person"><img class="avatar" src="${p.thumb || ""}" alt=""><div class="person-info"><div class="person-name">${escapeHtml(p.name)}</div><div class="person-meta">Локальный профиль</div></div><button class="remove" data-remove="${escapeHtml(p.id)}" title="Удалить профиль" aria-label="Удалить ${escapeHtml(p.name)}">×</button></div>`).join("");
+  }
+  async function loadModels(){
+    if (!window.faceapi) throw new Error("Библиотека распознавания не загрузилась. Проверьте интернет-соединение и обновите страницу.");
+    if (!modelPromise) modelPromise = Promise.all([
+      faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+    ]);
+    await modelPromise;
+  }
+  function makeMatcher(){
+    if (!profiles.length) return null;
+    const labeled = profiles.map(p => new faceapi.LabeledFaceDescriptors(p.id, [new Float32Array(p.descriptor)]));
+    return new faceapi.FaceMatcher(labeled, clamp(Number(thresholdInput.value) || .52, .35, .75));
+  }
+  function clamp(n,min,max){ return Math.min(max, Math.max(min,n)); }
+  function resizedCanvas(source,maxSize=960){
+    const scale = Math.min(1, maxSize / Math.max(source.width || source.videoWidth, source.height || source.videoHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round((source.width || source.videoWidth) * scale);
+    canvas.height = Math.round((source.height || source.videoHeight) * scale);
+    canvas.getContext("2d").drawImage(source,0,0,canvas.width,canvas.height);
+    return canvas;
+  }
+  function descriptorFromDetection(detection){ return Array.from(detection.descriptor); }
+  function getThumb(canvas,box){
+    const size = Math.max(box.width,box.height) * 1.3, cx = box.x + box.width/2, cy = box.y + box.height/2;
+    const thumb = document.createElement("canvas"); thumb.width=96; thumb.height=96;
+    thumb.getContext("2d").drawImage(canvas,cx-size/2,cy-size/2,size,size,0,0,96,96);
+    return thumb.toDataURL("image/jpeg",.75);
+  }
+  async function bestFace(source){
+    await loadModels();
+    const detections = await faceapi.detectAllFaces(source,new faceapi.SsdMobilenetv1Options({minConfidence:.45})).withFaceLandmarks().withFaceDescriptors();
+    if (!detections.length) return null;
+    return detections.sort((a,b) => b.detection.box.area - a.detection.box.area)[0];
+  }
+  async function startCamera(){
+    if (running) return;
+    try {
+      setStatus("Загрузка модели…","busy"); $("startBtn").disabled=true;
+      await loadModels();
+      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:false});
+      video.srcObject=stream; video.style.display="block";
+      await new Promise((resolve,reject)=>{video.onloadedmetadata=resolve;video.onerror=reject;});
+      await video.play(); running=true;
+      $("placeholder").classList.add("hidden"); $("stopBtn").disabled=false; $("snapshotBtn").disabled=false; $("addCaptureBtn").disabled=false;
+      resizeOverlay(); setStatus("Камера работает","ready"); loop();
+    } catch(e) {
+      stopCamera(); setStatus("Не удалось запустить","error"); toast(e.message || "Не удалось включить камеру.");
+    } finally { $("startBtn").disabled=false; }
+  }
+  function stopCamera(){
+    running=false; clearTimeout(timer); timer=null;
+    if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+    video.srcObject=null; video.style.display="none"; ctx.clearRect(0,0,overlay.width,overlay.height);
+    $("placeholder").classList.remove("hidden"); $("stopBtn").disabled=true; $("snapshotBtn").disabled=true; $("addCaptureBtn").disabled=true;
+    setStatus("Камера выключена");
+  }
+  function resizeOverlay(){
+    const rect=video.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+    overlay.width=Math.max(1,Math.round(rect.width*dpr)); overlay.height=Math.max(1,Math.round(rect.height*dpr));
+    overlay.style.width=rect.width+"px"; overlay.style.height=rect.height+"px";
+  }
+  function drawDetections(detections,results){
+    const sx=overlay.width/video.videoWidth, sy=overlay.height/video.videoHeight;
+    ctx.clearRect(0,0,overlay.width,overlay.height); ctx.lineWidth=2*(window.devicePixelRatio||1); ctx.font=`${13*(window.devicePixelRatio||1)}px Inter, sans-serif`;
+    detections.forEach((det,i)=>{
+      const b=det.detection.box, x=b.x*sx, y=b.y*sy, w=b.width*sx, h=b.height*sy, result=results[i];
+      const label=result ? result.name : "Неизвестное лицо", color=result ? "#10a37f" : "#6b7280";
+      ctx.strokeStyle=color; ctx.strokeRect(x,y,w,h);
+      const pad=6*(window.devicePixelRatio||1), height=24*(window.devicePixelRatio||1), textW=ctx.measureText(label).width;
+      ctx.fillStyle=color; ctx.fillRect(x,Math.max(0,y-height),textW+pad*2,height);
+      ctx.fillStyle="#fff"; ctx.fillText(label,x+pad,Math.max(height-6,y-7*(window.devicePixelRatio||1)));
+    });
+  }
+  function logEvent(text){
+    const log=$("log"); if(log.querySelector(".empty")) log.innerHTML="";
+    const li=document.createElement("li"), label=document.createElement("span"), time=document.createElement("time");
+    label.textContent=text; time.textContent=new Intl.DateTimeFormat("ru-RU",{hour:"2-digit",minute:"2-digit",second:"2-digit"}).format(new Date());
+    li.append(label,time); log.prepend(li); while(log.children.length>30) log.lastElementChild.remove();
+  }
+  async function loop(){
+    if(!running || busy) return;
+    if(document.hidden || video.readyState<2){timer=setTimeout(loop,400);return;}
+    busy=true;
+    try {
+      const detections=await faceapi.detectAllFaces(video,new faceapi.SsdMobilenetv1Options({minConfidence:.45})).withFaceLandmarks().withFaceDescriptors();
+      if(!running) return;
+      const matcher=makeMatcher(), now=Date.now(), results=[];
+      for(const det of detections){
+        let result=null;
+        if(matcher){const match=matcher.findBestMatch(det.descriptor);if(match.label!=="unknown") result={id:match.label,name:profiles.find(p=>p.id===match.label)?.name||"Знакомое лицо",distance:match.distance};}
+        results.push(result);
+        if(result && !lastSeen.has(result.id)){logEvent(`${result.name} распознан(а)`);lastSeen.set(result.id,now);}
+        if(result) lastSeen.set(result.id,now);
+      }
+      for(const [id,at] of lastSeen){if(now-at>4000){const p=profiles.find(x=>x.id===id);if(p)logEvent(`${p.name} вышел(ла) из кадра`);lastSeen.delete(id);}}
+      resizeOverlay(); drawDetections(detections,results);
+      if(!detections.length){$("result").innerHTML="<strong>Лицо не найдено</strong><small>Посмотрите в камеру и проверьте освещение.</small>";setStatus("Поиск лица","ready");}
+      else if(!profiles.length){$("result").innerHTML=`<strong>Найдено лиц: ${detections.length}</strong><small>Добавьте профиль, чтобы распознавать знакомых людей.</small>`;setStatus("Лицо найдено","ready");}
+      else {
+        const known=results.filter(Boolean);
+        if(known.length){const best=known[0];$("result").innerHTML=`<strong>${escapeHtml(best.name)}</strong><small>Совпадение найдено · расстояние ${best.distance.toFixed(2)}</small>`;setStatus("Лицо распознано","ready");}
+        else {$("result").innerHTML="<strong>Неизвестное лицо</strong><small>Лицо обнаружено, но совпадение с профилями не найдено.</small>";setStatus("Нет совпадения","ready");}
+      }
+    } catch(e){console.error(e);setStatus("Ошибка анализа","error");}
+    finally{busy=false;if(running)timer=setTimeout(loop,170);}
+  }
+  async function addProfileFromSource(source,name){
+    const note=$("formNote"), button=$("savePerson"); button.disabled=true; note.textContent="Ищем лицо и создаём профиль…";
+    try {
+      const canvas=resizedCanvas(source), det=await bestFace(canvas);
+      if(!det){note.textContent="На фото не найдено лицо. Попробуйте чёткий снимок анфас.";return false;}
+      if(profiles.some(p=>p.name.toLocaleLowerCase("ru-RU")===name.toLocaleLowerCase("ru-RU"))){note.textContent="Профиль с таким именем уже существует.";return false;}
+      profiles.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name,descriptor:descriptorFromDetection(det),thumb:getThumb(canvas,det.detection.box)});
+      saveProfiles(); renderProfiles(); $("personDialog").close(); logEvent(`Добавлен профиль: ${name}`); toast("Профиль сохранён на этом устройстве."); return true;
+    } catch(e){note.textContent=e.message;return false;}
+    finally{button.disabled=false;}
+  }
+  function openAddDialog(source){
+    $("personForm").dataset.source=source; $("personName").value=""; $("formNote").textContent=source==="camera"?"Будет использован текущий кадр с камеры.":"Для надёжного распознавания используйте чёткое фото анфас.";
+    $("personDialog").showModal(); $("personName").focus();
+  }
+  function snapshot(){
+    if(!video.videoWidth)return;
+    const canvas=document.createElement("canvas");canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+    canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);
+    const a=document.createElement("a");a.download=`face-ai-${Date.now()}.png`;a.href=canvas.toDataURL("image/png");a.click();
+  }
 
-  <!-- Здесь должен находиться остальной HTML, CSS и JavaScript программы. -->
+  $("startBtn").addEventListener("click",startCamera);
+  $("stopBtn").addEventListener("click",stopCamera);
+  $("snapshotBtn").addEventListener("click",snapshot);
+  $("addCaptureBtn").addEventListener("click",()=>openAddDialog("camera"));
+  $("addPhotoBtn").addEventListener("click",()=>$("photoInput").click());
+  $("photoInput").addEventListener("change",e=>{if(e.target.files?.[0])openAddDialog("photo");});
+  $("personForm").addEventListener("submit",async e=>{
+    e.preventDefault(); const name=$("personName").value.trim();if(!name)return;
+    let source=null;
+    if($("personForm").dataset.source==="camera"){
+      if(!video.videoWidth){$("formNote").textContent="Камера недоступна.";return;}
+      const c=document.createElement("canvas");c.width=video.videoWidth;c.height=video.videoHeight;c.getContext("2d").drawImage(video,0,0);source=c;
+    } else { try { source=$("photoInput").files?.[0] ? await fileToImage($("photoInput").files[0]) : null; } catch(err) { $("formNote").textContent=err.message; return; } }
+    if(!source){$("formNote").textContent="Выберите фотографию или снимите кадр с камеры.";return;}
+    await addProfileFromSource(source,name);
+    if(source instanceof HTMLImageElement && source.dataset.objectUrl)URL.revokeObjectURL(source.dataset.objectUrl);
+    $("photoInput").value="";
+  });
+  async function fileToImage(file){
+    return new Promise((resolve,reject)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{img.dataset.objectUrl=url;resolve(img);};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Не удалось открыть изображение."));};img.src=url;});
+  }
+  $("cancelAdd").addEventListener("click",()=>$("personDialog").close());
+  $("peopleList").addEventListener("click",e=>{
+    const button=e.target.closest("[data-remove]");if(!button)return;
+    const person=profiles.find(p=>p.id===button.dataset.remove);if(!person)return;
+    if(!confirm(`Удалить профиль «${person.name}»?`))return;
+    profiles=profiles.filter(p=>p.id!==person.id);saveProfiles();renderProfiles();lastSeen.delete(person.id);logEvent(`Удалён профиль: ${person.name}`);
+  });
+  $("threshold").addEventListener("change",()=>{thresholdInput.value=String(clamp(Number(thresholdInput.value)||.52,.35,.75));});
+  $("clearLog").addEventListener("click",()=>{$("log").innerHTML='<li class="empty">Событий пока нет.</li>';});
+  window.addEventListener("resize",()=>{if(running)resizeOverlay();});
+  window.addEventListener("beforeunload",stopCamera);
+  renderProfiles();
+})();
+</script>
 </body>
 </html>
