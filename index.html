@@ -1,1324 +1,159 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="light" data-theme-pref="auto">
+<html lang="ru" data-theme="light" data-theme-pref="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#eaf1fb">
-<meta name="description" content="Локальный анализ мимики и распознавание лиц в браузере. Видео и фотографии не покидают устройство.">
-<title>face.ai — Facial Motion Lab</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-/* ───────── Токены и темы ───────── */
-:root{
-  --accent:#1769d2;--accent-rgb:23,105,210;--ga:.55;--blur:26px;--r:24px;
-  --ease:cubic-bezier(.2,.9,.25,1.15);
-  --font:"Manrope",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
-}
-:root,[data-theme="light"]{
-  color-scheme:light;
-  --bg:#e9f0fa;--text:#10213a;--muted:#566882;
-  --glass-rgb:255,255,255;--glass-brd:rgba(255,255,255,.8);--hl:rgba(255,255,255,.95);
-  --shadow:0 18px 50px rgba(28,64,120,.15),0 2px 8px rgba(28,64,120,.06);
-  --rim:.95;--field:rgba(255,255,255,.62);--line:rgba(16,33,58,.1);--blob:.55;
-  --accent-text:color-mix(in srgb,var(--accent) 88%,#000);
-}
-[data-theme="dark"]{
-  color-scheme:dark;
-  --bg:#050a14;--text:#e9f0fb;--muted:#8b9db8;
-  --glass-rgb:22,34,58;--glass-brd:rgba(255,255,255,.14);--hl:rgba(255,255,255,.22);
-  --shadow:0 24px 60px rgba(0,0,0,.5),0 2px 10px rgba(0,0,0,.3);
-  --rim:.6;--field:rgba(255,255,255,.07);--line:rgba(255,255,255,.1);--blob:.42;
-  --accent-text:color-mix(in srgb,var(--accent) 70%,#fff);
-}
-*{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{margin:0;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--text);font-family:var(--font);letter-spacing:.005em;transition:background .5s,color .3s;overflow-x:hidden}
-button,input,select{font:inherit;color:inherit}button{cursor:pointer}
-button:disabled{opacity:.45;cursor:not-allowed}
-:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:10px}
-[hidden]{display:none!important}
-h1,h2,h3,p{margin:0}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5f7fa">
+  <meta name="description" content="Локальное распознавание лиц в браузере. Видео и фотографии обрабатываются на устройстве.">
+  <title>Face AI — анализ мимики</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Минималистичная светлая тема */
+    :root,[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f5f7fa;
+      --text: #172033;
+      --muted: #667085;
+      --field: #fff;
+      --line: #e3e7ee;
+      --glass-rgb: 255,255,255;
+      --glass-brd: #e3e7ee;
+      --hl: transparent;
+      --shadow: 0 1px 3px rgba(16,24,40,.06);
+      --accent-text: var(--accent);
+      --r: 12px;
+    }
 
-/* ───────── Фон: «жидкие» пятна под стеклом ───────── */
-.bg{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
-.blob{position:absolute;width:62vmax;height:62vmax;border-radius:50%;opacity:var(--blob);filter:blur(10px);
-  background:radial-gradient(circle at 35% 35%,rgba(var(--accent-rgb),.95),rgba(var(--accent-rgb),0) 68%);
-  animation:drift 34s ease-in-out infinite alternate;transition:opacity .5s}
-.b1{left:-18vmax;top:-22vmax}
-.b2{right:-22vmax;top:18vh;filter:hue-rotate(58deg) blur(10px);animation-duration:41s;animation-delay:-9s}
-.b3{left:22vw;bottom:-34vmax;filter:hue-rotate(-42deg) blur(10px);animation-duration:47s;animation-delay:-19s}
-@keyframes drift{0%{transform:translate3d(0,0,0) scale(1) rotate(0)}50%{transform:translate3d(7vmax,5vmax,0) scale(1.12) rotate(12deg)}100%{transform:translate3d(-5vmax,9vmax,0) scale(.94) rotate(-8deg)}}
+    html,body {
+      background: #f5f7fa !important;
+      color: #172033;
+      transition: none;
+    }
 
-/* ───────── Liquid glass ───────── */
-.glass{position:relative;isolation:isolate;
-  background:linear-gradient(145deg,rgba(var(--glass-rgb),calc(var(--ga) + .12)),rgba(var(--glass-rgb),calc(var(--ga) - .1)));
-  -webkit-backdrop-filter:blur(var(--blur)) saturate(1.9) brightness(1.04);backdrop-filter:blur(var(--blur)) saturate(1.9) brightness(1.04);
-  border:1px solid var(--glass-brd);border-radius:var(--r);
-  box-shadow:var(--shadow),inset 0 1.5px 0 var(--hl),inset 0 -1px 0 rgba(255,255,255,.07),inset 0 0 28px rgba(255,255,255,.05)}
-.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.2px;pointer-events:none;opacity:var(--rim);
-  background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,0) 28%,rgba(255,255,255,0) 68%,rgba(255,255,255,.55));
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
-.glass::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;mix-blend-mode:overlay;transition:opacity .35s;
-  background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),rgba(255,255,255,.5),transparent 62%)}
-@media(hover:hover){.glass:hover::after{opacity:.55}}
-@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.glass{background:rgba(var(--glass-rgb),.92)}}
+    body {
+      font-family: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+      letter-spacing: 0;
+    }
 
-/* ───────── Кнопки и поля ───────── */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 16px;border-radius:999px;
-  border:1px solid var(--glass-brd);background:rgba(var(--glass-rgb),.45);
-  -webkit-backdrop-filter:blur(12px) saturate(1.6);backdrop-filter:blur(12px) saturate(1.6);
-  font-size:13px;font-weight:650;line-height:1;white-space:nowrap;
-  box-shadow:inset 0 1px 0 var(--hl),0 4px 14px rgba(0,0,0,.06);
-  transition:transform .4s var(--ease),background .2s,box-shadow .2s,border-color .2s,color .2s}
-.btn:hover:not(:disabled){transform:translateY(-1px) scale(1.025);background:rgba(var(--glass-rgb),.72)}
-.btn:active:not(:disabled){transform:scale(.95)}
-.btn.primary{color:#fff;border-color:rgba(255,255,255,.4);
-  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 80%,#fff),var(--accent));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -8px 16px rgba(0,0,0,.12),0 10px 26px rgba(var(--accent-rgb),.4)}
-.btn.primary:hover:not(:disabled){background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 70%,#fff),color-mix(in srgb,var(--accent) 92%,#000))}
-.btn[aria-pressed="true"]{background:rgba(var(--accent-rgb),.18);border-color:rgba(var(--accent-rgb),.5);color:var(--accent-text)}
-.btn.sm{padding:7px 12px;font-size:12px}
-.btn.block{width:100%;padding:15px}
-.btn.danger:hover:not(:disabled){color:#e5484d;border-color:#e5484d66}
-.icon-btn{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--glass-brd);background:rgba(var(--glass-rgb),.4);font-size:15px;
-  box-shadow:inset 0 1px 0 var(--hl);transition:transform .4s var(--ease),background .2s}
-.icon-btn:hover{transform:scale(1.08);background:rgba(var(--glass-rgb),.7)}.icon-btn:active{transform:scale(.92)}
-.icon-btn svg,.seg button svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:11px;font-weight:650;color:var(--accent-text);background:rgba(var(--accent-rgb),.13);border:1px solid rgba(var(--accent-rgb),.25)}
-.muted{color:var(--muted);font-size:13px;line-height:1.7}
-.note{font-size:11.5px;line-height:1.7;color:var(--muted)}
-input[type=text],select,input[type=file]{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--field);font-size:13px}
-input[type=file]::file-selector-button{margin-right:10px;padding:6px 11px;border:0;border-radius:8px;background:rgba(var(--accent-rgb),.16);color:var(--accent-text);font-weight:650;cursor:pointer}
-select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 17px) 55%,calc(100% - 12px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
-input[type=range]{width:100%;height:22px;appearance:none;background:transparent}
-input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:9px;background:linear-gradient(90deg,var(--accent) var(--p,50%),var(--line) var(--p,50%))}
-input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;margin-top:-7.5px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.12);box-shadow:0 3px 10px rgba(0,0,0,.25),inset 0 -3px 5px rgba(0,0,0,.08);transition:transform .3s var(--ease)}
-input[type=range]:active::-webkit-slider-thumb{transform:scale(1.2)}
-input[type=range]::-moz-range-track{height:5px;border-radius:9px;background:var(--line)}
-input[type=range]::-moz-range-progress{height:5px;border-radius:9px;background:var(--accent)}
-input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.12);box-shadow:0 3px 10px rgba(0,0,0,.25)}
-.switch{position:relative;width:46px;height:28px;flex:none}
-.switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1}
-.switch i{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:background .3s;box-shadow:inset 0 1px 3px rgba(0,0,0,.15)}
-.switch i::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 7px rgba(0,0,0,.3);transition:transform .45s var(--ease),width .25s}
-.switch input:checked+i{background:var(--accent)}.switch input:checked+i::after{transform:translateX(18px)}
-.switch input:active+i::after{width:28px}.switch input:checked:active+i::after{transform:translateX(12px)}
-.switch input:focus-visible+i{outline:2px solid var(--accent);outline-offset:3px}
+    .bg,.blob,#themeSeg,.mode-card#startEmotion {
+      display: none !important;
+    }
 
-/* ───────── Верхняя панель ───────── */
-.topbar{position:fixed;z-index:30;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(1180px,calc(100% - 24px));
-  display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px 8px 14px;border-radius:999px}
-.brand-btn{display:flex;align-items:center;gap:10px;border:0;background:none;padding:0}
-.logo-mini{width:34px;height:34px;display:grid;place-items:center;border-radius:12px;color:#fff;font-size:17px;
-  background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 75%,#fff),var(--accent));box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 6px 16px rgba(var(--accent-rgb),.4)}
-.brand{font-size:19px;font-weight:800;letter-spacing:-.04em}.brand span{color:var(--accent-text)}
-.pill{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);min-width:0}
-.pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dot{flex:none;width:8px;height:8px;border-radius:50%;background:#9aa8bc;transition:background .3s,box-shadow .3s}
-.pill[data-state="live"] .dot{background:#22b573;box-shadow:0 0 0 4px rgba(34,181,115,.2)}
-.pill[data-state="busy"] .dot{background:#e2a11b;animation:pulse 1.1s infinite}
-.pill[data-state="error"] .dot{background:#e5484d}
-@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(226,161,27,.0);opacity:.5}}
-.top-actions{display:flex;align-items:center;gap:8px}
-.seg{position:relative;display:flex;padding:3px;border-radius:999px;background:var(--field);border:1px solid var(--line)}
-.seg button{position:relative;z-index:1;width:36px;height:30px;display:grid;place-items:center;border:0;background:none;border-radius:99px;color:var(--muted);transition:color .3s}
-.seg button[aria-pressed="true"]{color:var(--accent-text)}
-.seg-thumb{position:absolute;left:3px;top:3px;width:36px;height:30px;border-radius:99px;background:rgba(var(--glass-rgb),.9);box-shadow:0 3px 10px rgba(0,0,0,.18),inset 0 1px 0 var(--hl);transition:transform .55s var(--ease)}
-[data-theme-pref="auto"] .seg-thumb{transform:translateX(36px)}
-[data-theme-pref="dark"] .seg-thumb{transform:translateX(72px)}
+    .glass,.glass:hover,.glass::before,.glass::after {
+      background: #fff !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid #e3e7ee !important;
+      box-shadow: 0 1px 3px rgba(16,24,40,.06) !important;
+    }
 
-/* ───────── Экраны ───────── */
-main{padding:92px 18px 28px}
-.screen{display:none}.screen.active{display:block;animation:enter .6s var(--ease) both}
-@keyframes enter{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
-#welcome.active,#calibration.active{display:grid;place-items:center;min-height:calc(100dvh - 130px)}
-.center{width:min(480px,100%);text-align:center}
-.logo{width:76px;height:76px;margin:0 auto 22px;display:grid;place-items:center;border-radius:26px;color:#fff;font-size:34px;
-  background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 72%,#fff),var(--accent));
-  box-shadow:inset 0 2px 0 rgba(255,255,255,.6),inset 0 -10px 20px rgba(0,0,0,.14),0 18px 44px rgba(var(--accent-rgb),.45)}
-.hero-brand{font-size:38px;font-weight:800;letter-spacing:-.05em}.hero-brand span{color:var(--accent-text)}
-.mode-grid{display:grid;gap:12px;margin:26px 0 22px;text-align:left}
-.mode-card{display:grid;grid-template-columns:54px 1fr 20px;column-gap:16px;align-items:center;width:100%;padding:20px;text-align:left;cursor:pointer;
-  transition:transform .5s var(--ease)}
-.mode-card:hover{transform:translateY(-3px) scale(1.012)}.mode-card:active{transform:scale(.98)}
-.mode-icon{grid-row:span 2;width:54px;height:54px;display:grid;place-items:center;border-radius:18px;font-size:24px;color:var(--accent-text);
-  background:rgba(var(--accent-rgb),.14);border:1px solid rgba(var(--accent-rgb),.25);box-shadow:inset 0 1px 0 var(--hl)}
-.mode-card strong{font-size:15px;font-weight:750}.mode-card small{font-size:12px;line-height:1.5;color:var(--muted);margin-top:3px}
-.mode-arrow{grid-row:span 2;color:var(--accent-text);font-size:18px;transition:transform .4s var(--ease)}.mode-card:hover .mode-arrow{transform:translateX(5px)}
-kbd{display:inline-block;min-width:22px;padding:2px 6px;border-radius:7px;border:1px solid var(--line);background:var(--field);font:600 11px var(--font);text-align:center;box-shadow:0 1px 0 var(--line)}
+    .glass::before,.glass::after {
+      display: none !important;
+    }
 
-/* Калибровка */
-.cal-card{padding:30px 26px}
-.eyebrow{font-size:12px;font-weight:700;color:var(--accent-text);margin-bottom:16px}
-.camera-circle{width:200px;height:200px;margin:0 auto 22px;position:relative}
-.camera-circle video{width:100%;height:100%;object-fit:cover;border-radius:50%;background:#0b1424;border:3px solid rgba(255,255,255,.55);box-shadow:0 14px 40px rgba(0,0,0,.25)}
-.circle-ring{position:absolute;inset:-9px;border-radius:50%;border:2px solid rgba(var(--accent-rgb),.5);animation:ring 2.4s ease-in-out infinite;pointer-events:none}
-@keyframes ring{50%{transform:scale(1.04);opacity:.45}}
-.cal-emoji{font-size:30px;margin-bottom:4px}
-.cal-card h1{font-size:26px;letter-spacing:-.03em;margin:0 0 10px}
-.progress{height:5px;background:var(--line);border-radius:9px;margin-top:22px;overflow:hidden}
-#progressFill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 60%,#fff));border-radius:9px;transition:width .3s}
-#calStatus{font-size:12px;color:var(--accent-text);margin-top:13px;min-height:18px;font-weight:600}
-.steps{display:flex;justify-content:center;gap:9px;margin-top:18px}
-.step{width:9px;height:9px;border-radius:50%;background:var(--line);transition:all .4s var(--ease)}
-.step.done{background:var(--accent)}.step.current{background:var(--accent);transform:scale(1.5);box-shadow:0 0 0 4px rgba(var(--accent-rgb),.22)}
-.cal-actions{display:flex;gap:10px;margin-top:22px}.cal-actions .primary{flex:1}
+    .topbar {
+      border-radius: 14px !important;
+      padding: 8px 14px !important;
+    }
 
-/* Рабочая раскладка */
-.layout{width:min(1240px,100%);margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
-.col-main,.side{display:flex;flex-direction:column;gap:18px;min-width:0}
-.panel{overflow:hidden;padding-bottom:14px}
-.heading{min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 18px}
-.heading strong{font-size:14px;font-weight:750}
-.stage{position:relative;margin:0 14px;border-radius:18px;overflow:hidden;background:#0a111d;aspect-ratio:16/10;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 10px 30px rgba(0,0,0,.18)}
-.stage:fullscreen{margin:0;border-radius:0;aspect-ratio:auto;width:100vw;height:100vh}
-.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-.mirrorable{transform:scaleX(-1)}body.nomirror .mirrorable{transform:none}
-.stage canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.stage-label,.stage-fps,.pause-badge{position:absolute;padding:7px 11px;border-radius:999px;font-size:11px;font-weight:600;color:#fff;pointer-events:none;
-  background:rgba(8,16,30,.5);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.18)}
-.stage-label{left:12px;bottom:12px}.stage-fps{right:12px;bottom:12px;font-variant-numeric:tabular-nums}
-.pause-badge{left:50%;top:14px;transform:translateX(-50%);font-size:12px}
-.stage-empty{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:14px;padding:20px;text-align:center;color:#d5e2f5;font-size:13px;
-  background:radial-gradient(circle at 50% 40%,rgba(var(--accent-rgb),.28),transparent 60%),#0a111d}
-.stage-empty .big{font-size:42px}
-.controls{display:flex;gap:8px;flex-wrap:wrap;padding:14px 14px 2px}
-.card{padding:20px}.card h2{font-size:13.5px;font-weight:750;margin:0 0 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
-.hero-emo{display:flex;align-items:center;gap:16px}
-.hero-emoji{width:76px;height:76px;flex:none;display:grid;place-items:center;font-size:44px;border-radius:26px;
-  background:rgba(var(--accent-rgb),.12);border:1px solid rgba(var(--accent-rgb),.22);box-shadow:inset 0 1px 0 var(--hl);transition:transform .5s var(--ease)}
-.hero-emoji.pop{transform:scale(1.14) rotate(-4deg)}
-.bigEmotion{font-size:26px;font-weight:800;letter-spacing:-.03em;color:var(--accent-text);line-height:1.1}
-.conf{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
-.emotion{margin-top:14px}.emotion:first-child{margin-top:0}
-.emotionTop{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:6px}
-.emotionTop span:last-child{color:var(--muted);font-variant-numeric:tabular-nums}
-.bar{height:6px;background:var(--line);border-radius:10px;overflow:hidden}
-.fill{height:100%;width:0;background:var(--c,var(--accent));border-radius:10px;transition:width .2s}
-canvas#timeline{display:block;width:calc(100% - 28px);height:150px;margin:0 14px;border-radius:14px;background:var(--field);border:1px solid var(--line)}
-.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:12px 18px 2px;font-size:11px;color:var(--muted)}
-.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--c)}
-.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:0 14px}
-.stat{padding:12px;border-radius:14px;background:var(--field);border:1px solid var(--line)}
-.stat b{display:block;font-size:19px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.stat small{font-size:11px;color:var(--muted)}
-.stat .bar{margin-top:8px;height:4px}
-.metric-row{display:grid;grid-template-columns:96px 1fr 44px;align-items:center;gap:10px;font-size:12px;margin-top:12px}
-.metric-row:first-of-type{margin-top:0}.metric-row output{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
-.pose-bar{position:relative;height:6px;border-radius:9px;background:var(--line)}
-.pose-bar::before{content:"";position:absolute;left:50%;top:-3px;width:1.5px;height:12px;background:var(--muted);opacity:.5}
-.pose-dot{position:absolute;top:50%;left:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(var(--accent-rgb),.2);transition:left .1s linear}
-.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+    .logo,.logo-mini {
+      border-radius: 12px !important;
+      background: #1769d2 !important;
+      box-shadow: none !important;
+    }
 
-/* Люди */
-.profile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:10px}
-.profile{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 8px 11px;border-radius:18px;background:var(--field);border:1px solid var(--line);text-align:center}
-.avatar{position:relative;width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-size:24px;font-weight:800;color:var(--accent-text);background:rgba(var(--accent-rgb),.14);border:2px solid rgba(var(--accent-rgb),.3);overflow:visible}
-.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.state-dot{position:absolute;right:-1px;bottom:0;width:15px;height:15px;border-radius:50%;border:2.5px solid var(--bg);background:#9aa8bc}
-.profile[data-state="ready"] .state-dot{background:#22b573}.profile[data-state="missing"] .state-dot,.profile[data-state="noface"] .state-dot{background:#e5484d}
-.pname{font-size:13px;font-weight:750}.profile small{font-size:10.5px;color:var(--muted)}
-.profile .x{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(var(--glass-rgb),.7);color:var(--muted);font-size:14px;line-height:1;display:grid;place-items:center}
-.profile .x:hover{color:#e5484d}
-.profile.add{justify-content:center;border-style:dashed;color:var(--accent-text);font-size:28px;font-weight:300;min-height:116px;background:transparent;transition:background .3s,transform .4s var(--ease)}
-.profile.add small{font-size:11.5px;font-weight:650;color:var(--accent-text)}.profile.add:hover{background:rgba(var(--accent-rgb),.08);transform:scale(1.03)}
-.people-status{font-size:12px;color:var(--accent-text);line-height:1.6;margin-top:14px;font-weight:600}
-.error-message{color:#e5484d!important}
-.chips{display:flex;flex-wrap:wrap;gap:8px;min-height:30px}
-.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:12px;max-height:200px;overflow:auto}
-.log li{display:flex;justify-content:space-between;gap:10px;color:var(--muted)}.log li b{color:var(--text);font-weight:650}.log time{font-variant-numeric:tabular-nums;white-space:nowrap}
-.empty-hint{font-size:12px;color:var(--muted)}
+    .mode-card {
+      border-radius: 12px !important;
+      transition: border-color .15s,background .15s !important;
+    }
 
-/* Настройки */
-.scrim{position:fixed;inset:0;z-index:40;background:rgba(5,12,24,.35);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .4s}
-.scrim.on{opacity:1;pointer-events:auto}
-.drawer{position:fixed;z-index:41;top:max(12px,env(safe-area-inset-top));bottom:12px;right:12px;width:min(380px,calc(100% - 24px));display:flex;flex-direction:column;
-  transform:translateX(calc(100% + 30px));transition:transform .65s var(--ease)}
-.drawer.open{transform:none}
-.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px;font-size:16px}
-.drawer-body{overflow:auto;padding:4px 18px 20px;display:flex;flex-direction:column;gap:22px}
-.drawer h3{font-size:12px;font-weight:750;color:var(--muted);margin-bottom:12px}
-.row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;margin-top:14px}
-.row.col{flex-direction:column;align-items:stretch;gap:8px}
-.row .lbl{display:flex;justify-content:space-between;gap:10px;font-weight:600}.row output{color:var(--muted);font-variant-numeric:tabular-nums}
-.row small{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px}
-.swatches{display:flex;gap:9px;flex-wrap:wrap}
-.swatch{width:30px;height:30px;border-radius:50%;border:2px solid #fff;background:var(--sw);box-shadow:0 3px 10px rgba(0,0,0,.25),inset 0 -5px 8px rgba(0,0,0,.15);transition:transform .4s var(--ease)}
-.swatch:hover{transform:scale(1.15)}.swatch[aria-pressed="true"]{transform:scale(1.18);outline:2px solid var(--sw);outline-offset:2px}
-.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+    .mode-card:hover {
+      transform: none !important;
+      border-color: #1769d2 !important;
+      background: #f8fbff !important;
+    }
 
-/* Диалоги и уведомления */
-dialog{color:var(--text);border:1px solid var(--glass-brd);padding:0;width:min(440px,calc(100% - 28px));max-height:90dvh;overflow:auto}
-dialog::backdrop{background:rgba(5,12,24,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-dialog.glass{position:fixed}
-dialog[open]{animation:enter .5s var(--ease)}
-.dlg{padding:24px;display:flex;flex-direction:column;gap:14px}.dlg h2{font-size:19px;letter-spacing:-.02em}
-.dlg label{display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:650}
-.dlg-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-#addPreview{width:92px;height:92px;object-fit:cover;border-radius:50%;margin:0 auto;border:3px solid rgba(var(--accent-rgb),.4)}
-.keys{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;font-size:13px;align-items:center}
-.toasts{position:fixed;z-index:60;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center;width:min(480px,calc(100% - 24px));pointer-events:none}
-.toast{padding:12px 18px;border-radius:18px;font-size:13px;font-weight:600;text-align:center;opacity:0;transform:translateY(12px) scale(.96);transition:all .45s var(--ease);
-  background:rgba(var(--glass-rgb),.82);-webkit-backdrop-filter:blur(22px) saturate(1.8);backdrop-filter:blur(22px) saturate(1.8);border:1px solid var(--glass-brd);box-shadow:var(--shadow)}
-.toast.in{opacity:1;transform:none}.toast.error{color:#e5484d}.toast.ok{color:#1d9c63}
+    .btn,.icon-btn {
+      border-radius: 9px !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      transition: background .15s,border-color .15s,color .15s !important;
+    }
 
-/* Адаптивность */
-@media(max-width:1000px){.layout{grid-template-columns:1fr}}
-@media(max-width:620px){
-  main{padding:84px 12px 24px}
-  .pill span{display:none}.brand{font-size:17px}
-  .stage{aspect-ratio:4/3}.controls .btn{padding:9px 12px}
-  .hero-brand{font-size:32px}.metric-row{grid-template-columns:84px 1fr 40px}
-}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-@media(prefers-reduced-transparency:reduce){.glass{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(var(--glass-rgb),.94)}}
-</style>
+    .btn:hover:not(:disabled),.icon-btn:hover {
+      transform: none !important;
+    }
+
+    .btn.primary {
+      background: #1769d2 !important;
+      border-color: #1769d2 !important;
+      box-shadow: none !important;
+    }
+
+    .btn.primary:hover:not(:disabled) {
+      background: #1059b8 !important;
+    }
+
+    .stage,.camera-circle video {
+      box-shadow: none !important;
+    }
+
+    .stage-label,.stage-fps,.pause-badge {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: rgba(16,24,40,.78) !important;
+    }
+
+    .hero-emoji,.cal-emoji {
+      display: none !important;
+    }
+
+    .screen.active {
+      animation: none !important;
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      *,*::before,*::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
 </head>
 <body>
-<div class="bg" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i></div>
+  <header class="topbar glass">
+    <button class="brand-btn" id="brandHome" aria-label="На главную">
+      <span class="logo-mini">F</span>
+      <span class="brand">face<span>.</span>ai</span>
+    </button>
 
-<header class="topbar glass">
-  <button class="brand-btn" id="brandHome" aria-label="На главную"><span class="logo-mini">⌁</span><span class="brand">face<span>.</span>ai</span></button>
-  <div class="pill" id="pill" data-state="idle" role="status"><i class="dot"></i><span id="status">Готов к запуску</span></div>
-  <div class="top-actions">
-    <div class="seg" id="themeSeg" role="group" aria-label="Тема оформления">
-      <i class="seg-thumb"></i>
-      <button data-theme-set="light" aria-pressed="false" title="Светлая тема" aria-label="Светлая тема"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
-      <button data-theme-set="auto" aria-pressed="true" title="Как в системе" aria-label="Тема как в системе"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18" /><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg></button>
-      <button data-theme-set="dark" aria-pressed="false" title="Тёмная тема" aria-label="Тёмная тема"><svg viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg></button>
+    <div class="pill" id="pill" data-state="idle" role="status">
+      <i class="dot"></i>
+      <span id="status">Готов к запуску</span>
     </div>
-    <button class="icon-btn" id="openSettings" title="Настройки" aria-label="Настройки"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-    <button class="icon-btn" id="openHelp" title="Горячие клавиши (?)" aria-label="Горячие клавиши"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M9.2 9.3a3 3 0 1 1 4.3 2.7c-.9.5-1.5 1-1.5 2"/><path d="M12 17.3h.01"/></svg></button>
-  </div>
-</header>
 
-<main>
-<!-- ───────── Главная ───────── -->
-<section id="welcome" class="screen active"><div class="center">
-  <div class="logo">⌁</div>
-  <div class="hero-brand">face<span>.</span>ai</div>
-  <p class="muted" style="margin-top:8px">Выбери, что хочешь анализировать</p>
-  <div class="mode-grid">
-    <button class="mode-card glass" id="startEmotion"><span class="mode-icon">◉</span><strong>Определение эмоций</strong><small>Сетка лица, проценты выражений, поза головы и моргания</small><span class="mode-arrow">→</span></button>
-    <button class="mode-card glass" id="openPeople"><span class="mode-icon">⌘</span><strong>Определение людей</strong><small>Распознавание Алисы, Матвея и людей, которых добавишь сам</small><span class="mode-arrow">→</span></button>
-  </div>
-  <p class="muted">Камера включится после выбора режима.<br>Видео и фото обрабатываются в браузере и никуда не отправляются.</p>
-  <p class="note" style="margin-top:14px">Быстрый старт: <kbd>1</kbd> эмоции · <kbd>2</kbd> люди · <kbd>?</kbd> все клавиши</p>
-</div></section>
+    <div class="top-actions">
+      <button class="icon-btn" id="openSettings" title="Настройки" aria-label="Настройки">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="openHelp" title="Горячие клавиши (?)" aria-label="Горячие клавиши">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9.5"/>
+          <path d="M9.2 9.3a3 3 0 1 1 4.3 2.7c-.9.5-1.5 1-1.5 2"/>
+          <path d="M12 17.3h.01"/>
+        </svg>
+      </button>
+    </div>
+  </header>
 
-<!-- ───────── Люди ───────── -->
-<section id="people" class="screen"><div class="layout">
-  <div class="col-main">
-    <section class="panel glass">
-      <div class="heading"><strong>Определение людей</strong><span class="chip" id="peopleChip">Камера выключена</span></div>
-      <div class="stage" id="peopleStage">
-        <video id="peopleVideo" class="mirrorable" autoplay playsinline muted></video>
-        <canvas id="peopleOverlay"></canvas>
-        <div class="stage-empty" id="peopleEmpty"><div class="big">⌘</div><div>Камера выключена.<br>Модели загрузятся при первом запуске.</div><button class="btn primary" id="peopleEmptyBtn">Открыть камеру</button></div>
-        <div class="stage-fps" id="peopleFps" hidden></div>
-        <div class="pause-badge" id="peoplePauseBadge" hidden>Пауза</div>
-      </div>
-      <div class="controls">
-        <button class="btn primary" id="startPeople">Открыть камеру</button>
-        <button class="btn" id="pausePeople" hidden>Пауза</button>
-        <button class="btn" id="snapPeople" hidden>Снимок</button>
-        <button class="btn" id="mirrorPeople" aria-pressed="true" title="Зеркальное отображение">Зеркало</button>
-        <button class="btn" id="fsPeople" hidden>На весь экран</button>
-        <button class="btn danger" id="stopPeople" hidden>Остановить</button>
-        <button class="btn" id="backHome">← Назад</button>
-      </div>
-    </section>
-    <p class="note" style="padding:0 8px">Для точного сравнения используй один хорошо освещённый портрет анфас на человека. Это экспериментальная демонстрация: ошибки распознавания возможны, не используй её для идентификации в серьёзных целях.</p>
-  </div>
-  <aside class="side">
-    <section class="card glass"><h2>Люди</h2>
-      <div class="profile-grid" id="profileGrid" aria-label="Люди для распознавания"></div>
-      <div class="people-status" id="peopleStatus" role="status" aria-live="polite">Нажми «Открыть камеру» и разреши доступ.</div>
-    </section>
-    <section class="card glass"><h2>Сейчас в кадре</h2><div class="chips" id="peoplePresent"><span class="empty-hint">Пока никого</span></div></section>
-    <section class="card glass"><h2>Журнал <button class="btn sm" id="clearSeen">Очистить</button></h2><ul class="log" id="seenLog"><li class="empty-hint">Событий пока нет</li></ul></section>
-  </aside>
-</div></section>
-
-<!-- ───────── Калибровка ───────── -->
-<section id="calibration" class="screen"><div class="center cal-card glass">
-  <div class="eyebrow" id="calStep">Подготовка</div>
-  <div class="camera-circle"><video id="calVideo" class="mirrorable" autoplay playsinline muted></video><div class="circle-ring"></div></div>
-  <div class="cal-emoji" id="calEmoji">📷</div>
-  <h1 id="calTitle">Подключение камеры</h1>
-  <p class="muted" id="calDescription">Сначала подключим камеру и подготовим модель.</p>
-  <div class="progress"><div id="progressFill"></div></div>
-  <div id="calStatus" role="status" aria-live="polite">Ожидание…</div>
-  <div class="steps" id="steps"><i class="step current"></i><i class="step"></i><i class="step"></i><i class="step"></i><i class="step"></i></div>
-  <div class="cal-actions"><button class="btn" id="cancel">Отмена</button><button class="btn" id="calBack" hidden>← Назад</button><button class="btn primary" id="next" disabled>Далее →</button></div>
-  <div class="btn-row" style="justify-content:center"><button class="btn sm" id="calSkip" hidden>Пропустить этап</button><button class="btn sm" id="useSaved" hidden>Использовать сохранённую калибровку</button></div>
-  <p class="note" style="margin-top:16px">Сделай выражение и нажми «Далее», когда будешь готов. Калибровка настраивает оценку под твоё лицо.</p>
-</div></section>
-
-<!-- ───────── Эмоции ───────── -->
-<section id="app" class="screen"><div class="layout">
-  <div class="col-main">
-    <section class="panel glass">
-      <div class="heading"><strong>Отслеживание мимики</strong><span class="chip" id="faceStatus">Поиск лица</span></div>
-      <div class="stage" id="stage">
-        <video id="video" class="mirrorable" autoplay playsinline muted></video>
-        <canvas id="mesh"></canvas>
-        <div class="stage-label" id="meshLabel">Ожидание лица</div>
-        <div class="stage-fps" id="fpsLabel">— FPS</div>
-        <div class="pause-badge" id="pauseBadge" hidden>Пауза</div>
-      </div>
-      <div class="controls">
-        <button class="btn" id="pauseBtn" title="Пауза (Пробел)">Пауза</button>
-        <button class="btn" id="meshToggle" title="Режим сетки (M)">Сетка: полная</button>
-        <button class="btn" id="snapBtn" title="Снимок (S)">Снимок</button>
-        <button class="btn" id="mirrorBtn" aria-pressed="true">Зеркало</button>
-        <button class="btn" id="fsBtn" title="На весь экран (F)">На весь экран</button>
-        <button class="btn" id="recalibrate" title="Повторить калибровку (C)">↻ Калибровка</button>
-        <button class="btn danger" id="stop">Выключить камеру</button>
-      </div>
-    </section>
-    <section class="panel glass">
-      <div class="heading"><strong>Динамика за 30 секунд</strong><button class="btn sm" id="resetStats">Сбросить сессию</button></div>
-      <canvas id="timeline" aria-label="График выражений за последние 30 секунд"></canvas>
-      <div class="legend" id="legend"></div>
-    </section>
-    <section class="panel glass">
-      <div class="heading"><strong>Статистика сессии</strong><span class="chip" id="sessionTime">00:00</span></div>
-      <div class="stats" id="statsGrid"></div>
-      <div class="controls"><button class="btn sm" id="exportCsv">Скачать CSV</button></div>
-    </section>
-  </div>
-  <aside class="side">
-    <section class="card glass"><h2>Сейчас</h2>
-      <div class="hero-emo"><div class="hero-emoji" id="heroEmoji">😐</div><div><div class="bigEmotion" id="heroName">—</div><div class="conf" id="mainConf">Ждём лицо в кадре</div></div></div>
-    </section>
-    <section class="card glass"><h2>Показатели выражений</h2><div id="emotionList"></div></section>
-    <section class="card glass"><h2>Голова и глаза</h2>
-      <div class="metric-row"><span>Поворот</span><div class="pose-bar"><i class="pose-dot" id="poseYaw"></i></div><output id="poseYawV">0°</output></div>
-      <div class="metric-row"><span>Наклон вперёд</span><div class="pose-bar"><i class="pose-dot" id="posePitch"></i></div><output id="posePitchV">0°</output></div>
-      <div class="metric-row"><span>Наклон вбок</span><div class="pose-bar"><i class="pose-dot" id="poseRoll"></i></div><output id="poseRollV">0°</output></div>
-      <div class="mini-grid">
-        <div class="stat"><b id="blinkCount">0</b><small id="blinkRate">моргания · 0 в минуту</small></div>
-        <div class="stat"><b id="mouthOpen">0%</b><small>рот открыт</small></div>
-      </div>
-    </section>
-    <section class="card glass"><h2>Калибровка</h2><div class="bigEmotion" style="font-size:16px" id="calResult">Не выполнена</div><p class="note" id="calInfo" style="margin-top:8px">Необходимо пройти пять этапов.</p></section>
-    <p class="note" style="padding:0 8px">Сетку строит MediaPipe. Оценки выражений приблизительные: они описывают движения лица, а не истинные чувства человека.</p>
-  </aside>
-</div></section>
-</main>
-
-<!-- ───────── Настройки ───────── -->
-<div class="scrim" id="scrim"></div>
-<aside class="drawer glass" id="drawer" aria-label="Настройки" aria-hidden="true" inert>
-  <div class="drawer-head"><strong>Настройки</strong><button class="icon-btn" id="closeSettings" aria-label="Закрыть">✕</button></div>
-  <div class="drawer-body">
-    <section><h3>Внешний вид</h3>
-      <div class="row"><span class="lbl">Акцентный цвет</span><div class="swatches" id="swatches"></div></div>
-      <label class="row col"><span class="lbl">Прозрачность и сила стекла<output id="glassOut"></output></span><input type="range" id="setGlass" min="0" max="100"></label>
-    </section>
-    <section><h3>Камера</h3>
-      <label class="row col"><span class="lbl">Устройство</span><select id="camSelect"><option value="">По умолчанию</option></select></label>
-      <div class="row"><span class="lbl">Зеркальное отображение</span><span class="switch"><input type="checkbox" id="setMirror"><i></i></span></div>
-    </section>
-    <section><h3>Анализ мимики</h3>
-      <label class="row col"><span class="lbl">Скорость реакции<output id="smoothOut"></output></span><input type="range" id="setSmoothing" min="5" max="60"></label>
-      <label class="row col"><span class="lbl">Чувствительность<output id="sensOut"></output></span><input type="range" id="setSensitivity" min="50" max="200"></label>
-      <label class="row col"><span class="lbl">Сетка лица</span><select id="setMeshMode"><option value="full">Полная</option><option value="contours">Контуры</option><option value="points">Точки</option><option value="off">Скрыта</option></select></label>
-      <label class="row col"><span class="lbl">Яркость сетки<output id="meshOpOut"></output></span><input type="range" id="setMeshOpacity" min="10" max="100"></label>
-    </section>
-    <section><h3>Распознавание людей</h3>
-      <label class="row col"><span class="lbl">Порог сходства<output id="thrOut"></output></span><input type="range" id="setThreshold" min="30" max="70"></label>
-      <p class="note">Ниже — строже: меньше ложных срабатываний, но чаще «не узнал».</p>
-      <div class="row"><span class="lbl">Показывать незнакомых<small>Пунктирный овал без имени</small></span><span class="switch"><input type="checkbox" id="setShowUnknown"><i></i></span></div>
-      <div class="row"><span class="lbl">Голосовое приветствие<small>«Привет, Алиса» при появлении</small></span><span class="switch"><input type="checkbox" id="setVoice"><i></i></span></div>
-    </section>
-    <section><h3>Данные</h3>
-      <p class="note">Всё хранится только в этом браузере: настройки, сохранённая калибровка и добавленные люди (числовые описания лиц и миниатюры).</p>
-      <div class="btn-row"><button class="btn sm danger" id="resetData">Удалить сохранённые данные</button><button class="btn sm" id="resetSettings">Сбросить настройки</button></div>
-    </section>
-  </div>
-</aside>
-
-<dialog id="helpDialog" class="glass"><div class="dlg">
-  <h2>Горячие клавиши</h2>
-  <div class="keys">
-    <kbd>1</kbd><span>Эмоции (на главной)</span><kbd>2</kbd><span>Люди (на главной)</span>
-    <kbd>T</kbd><span>Сменить тему</span><kbd>Пробел</kbd><span>Пауза анализа</span>
-    <kbd>M</kbd><span>Режим сетки</span><kbd>S</kbd><span>Сохранить снимок</span>
-    <kbd>F</kbd><span>На весь экран</span><kbd>C</kbd><span>Повторить калибровку</span>
-    <kbd>,</kbd><span>Настройки</span><kbd>?</kbd><span>Эта подсказка</span>
-  </div>
-  <div class="dlg-actions"><button class="btn primary" id="helpClose">Понятно</button></div>
-</div></dialog>
-
-<dialog id="addDialog" class="glass"><form class="dlg" id="addForm">
-  <h2>Добавить человека</h2>
-  <label>Имя<input type="text" id="addName" maxlength="24" required placeholder="Например, Анна" autocomplete="off"></label>
-  <label>Фото анфас<input type="file" id="addFile" accept="image/*"></label>
-  <img id="addPreview" alt="Предпросмотр" hidden>
-  <p class="note" id="addNote">Загрузи чёткий портрет или сними кадр с камеры (сначала открой камеру). Фото не отправляется на сервер.</p>
-  <div class="dlg-actions"><button type="button" class="btn" id="addFromCam">Снять с камеры</button><button type="button" class="btn" id="addCancel">Отмена</button><button class="btn primary" id="addSubmit" type="submit">Добавить</button></div>
-</form></dialog>
-
-<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
-
-<script type="module">
-/* ═════════════ Константы ═════════════ */
-const MP_URL="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
-const FACEAPI_URL="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.esm.js";
-const FACE_MODELS="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model";
-const LANDMARKER_MODEL="https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
-
-const $=id=>document.getElementById(id);
-const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const pad2=n=>String(n).padStart(2,"0");
-const clock=(d=new Date())=>`${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
-
-const steps=[
- {key:"neutral",emoji:"😐",title:"Нейтральное лицо",description:"Расслабь лицо и смотри прямо в камеру."},
- {key:"happy",emoji:"😄",title:"Улыбка",description:"Улыбнись естественно и удерживай улыбку."},
- {key:"surprised",emoji:"😮",title:"Удивление",description:"Подними брови и широко открой глаза."},
- {key:"sad",emoji:"😢",title:"Грусть",description:"Изобрази грустное выражение лица."},
- {key:"angry",emoji:"😠",title:"Злость",description:"Нахмурь брови и изобрази сердитое выражение."}
-];
-const emotionOrder=["neutral","happy","sad","angry","surprised","fearful","disgusted"];
-const expressionNames={neutral:"Нейтрально",happy:"Радость",sad:"Грусть",angry:"Злость",surprised:"Удивление",fearful:"Страх",disgusted:"Отвращение"};
-const emoEmoji={neutral:"😐",happy:"😄",sad:"😢",angry:"😠",surprised:"😮",fearful:"😨",disgusted:"🤢"};
-const emoColor={neutral:"#7f93b0",happy:"#f0ae1c",sad:"#4a7be0",angry:"#e5484d",surprised:"#a35cff",fearful:"#1fb5a0",disgusted:"#82a83a"};
-const ACCENTS=[["Синий","#1769d2"],["Фиолетовый","#6d4aff"],["Бирюзовый","#0e9f8e"],["Розовый","#e5446d"],["Янтарный","#d98200"],["Графит","#475569"]];
-const BUILTIN=[{id:"alisa",name:"Алиса",url:"./alisa.jpg"},{id:"matvey",name:"Матвей",url:"./matvey.jpg"}];
-const MESH_MODES=[["full","полная"],["contours","контуры"],["points","точки"],["off","скрыта"]];
-
-/* ═════════════ Настройки ═════════════ */
-const DEFAULTS={theme:"auto",accent:"#1769d2",glass:55,smoothing:18,sensitivity:100,meshMode:"full",meshOpacity:75,threshold:52,showUnknown:false,voice:false,mirror:true,deviceId:""};
-function readJSON(key,fallback){try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback}catch{return fallback}}
-function writeJSON(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch{}}
-let settings={...DEFAULTS,...readJSON("faceai.settings",{})};
-const saveSettings=()=>writeJSON("faceai.settings",settings);
-
-const colors={accent:"#1769d2",rgb:"23,105,210",muted:"#566882",line:"rgba(0,0,0,.1)"};
-const mq=matchMedia("(prefers-color-scheme: dark)");
-const resolvedTheme=()=>settings.theme==="auto"?(mq.matches?"dark":"light"):settings.theme;
-function hexRgb(h){const m=/^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(h);return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:[23,105,210]}
-function applyAppearance(){
- const root=document.documentElement,theme=resolvedTheme();
- root.dataset.theme=theme;root.dataset.themePref=settings.theme;
- const [r,g,b]=hexRgb(settings.accent);
- root.style.setProperty("--accent",settings.accent);root.style.setProperty("--accent-rgb",`${r},${g},${b}`);
- root.style.setProperty("--ga",(.22+settings.glass/100*.55).toFixed(3));
- root.style.setProperty("--blur",(6+settings.glass*.45).toFixed(1)+"px");
- document.querySelector('meta[name="theme-color"]').content=theme==="dark"?"#050a14":"#e9f0fa";
- document.body.classList.toggle("nomirror",!settings.mirror);
- requestAnimationFrame(()=>{
-  const cs=getComputedStyle(root);
-  colors.accent=settings.accent;colors.rgb=`${r},${g},${b}`;
-  colors.muted=cs.getPropertyValue("--muted").trim()||colors.muted;colors.line=cs.getPropertyValue("--line").trim()||colors.line;
-  drawTimeline(true);
- });
- document.querySelectorAll("[data-theme-set]").forEach(btn=>btn.setAttribute("aria-pressed",String(btn.dataset.themeSet===settings.theme)));
- document.querySelectorAll(".swatch").forEach(s=>s.setAttribute("aria-pressed",String(s.dataset.color===settings.accent)));
- [$("mirrorBtn"),$("mirrorPeople")].forEach(b=>b.setAttribute("aria-pressed",String(settings.mirror)));
- if($("setMirror"))$("setMirror").checked=settings.mirror;
-}
-mq.addEventListener("change",()=>{if(settings.theme==="auto")applyAppearance()});
-function setTheme(t){settings.theme=t;saveSettings();applyAppearance()}
-const cycleTheme=()=>setTheme({light:"dark",dark:"auto",auto:"light"}[settings.theme]||"light");
-
-/* ═════════════ Уведомления и статус ═════════════ */
-function toast(msg,kind="info",ms=3800){
- const el=document.createElement("div");el.className="toast "+kind;el.textContent=msg;$("toasts").append(el);
- requestAnimationFrame(()=>el.classList.add("in"));
- setTimeout(()=>{el.classList.remove("in");setTimeout(()=>el.remove(),500)},ms);
-}
-function setPill(text,state="idle"){$("status").textContent=text;$("pill").dataset.state=state}
-const calStatus=t=>{$("calStatus").textContent=t};
-function download(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
-
-/* ═════════════ Экраны ═════════════ */
-const screens=["welcome","people","calibration","app"];
-function show(id){
- screens.forEach(s=>$(s).classList.toggle("active",s===id));document.body.dataset.screen=id;window.scrollTo({top:0});
- if(id==="welcome")setPill("Готов к запуску","idle");
-}
-const currentScreen=()=>document.body.dataset.screen||"welcome";
-
-/* ═════════════ Камера ═════════════ */
-function camError(e){
- const m={NotAllowedError:"Доступ к камере запрещён. Разреши его в настройках браузера.",SecurityError:"Камера доступна только через HTTPS или localhost.",
-  NotFoundError:"Камера не найдена. Подключи устройство и повтори.",NotReadableError:"Камера занята другим приложением.",OverconstrainedError:"Выбранная камера недоступна."};
- return new Error(m[e?.name]||e?.message||"Не удалось открыть камеру.");
-}
-async function getStream(){
- if(!navigator.mediaDevices?.getUserMedia)throw new Error("Камера доступна только через HTTPS или localhost.");
- const size={width:{ideal:1280},height:{ideal:720}};
- const tries=[];
- if(settings.deviceId)tries.push({deviceId:{exact:settings.deviceId},...size});
- tries.push({facingMode:"user",...size},true);
- let err;
- for(const video of tries){
-  try{const s=await navigator.mediaDevices.getUserMedia({audio:false,video});refreshCameras(s);return s}
-  catch(e){err=e;if(e.name==="NotAllowedError"||e.name==="SecurityError")break}
- }
- throw camError(err);
-}
-const stopStream=s=>{if(s)s.getTracks().forEach(t=>t.stop())};
-async function refreshCameras(active){
- try{
-  const list=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="videoinput");
-  const sel=$("camSelect"),current=settings.deviceId||active?.getVideoTracks()[0]?.getSettings().deviceId||"";
-  sel.innerHTML=`<option value="">По умолчанию</option>`+list.map((d,i)=>`<option value="${esc(d.deviceId)}">${esc(d.label||"Камера "+(i+1))}</option>`).join("");
-  sel.value=list.some(d=>d.deviceId===current)?current:"";
- }catch{}
-}
-function waitVideo(el){
- return new Promise((resolve,reject)=>{
-  if(el.readyState>=2&&el.videoWidth)return resolve();
-  const timeout=setTimeout(()=>{clean();reject(new Error("Камера не передала изображение за 15 секунд."))},15000);
-  function clean(){clearTimeout(timeout);el.removeEventListener("loadeddata",ok);el.removeEventListener("error",bad)}
-  function ok(){clean();resolve()} function bad(){clean();reject(new Error("Ошибка видеопотока камеры."))}
-  el.addEventListener("loadeddata",ok,{once:true});el.addEventListener("error",bad,{once:true});
- });
-}
-
-/* ═════════════ Режим «Эмоции»: состояние ═════════════ */
-const calVideo=$("calVideo"),video=$("video"),canvas=$("mesh"),ctx=canvas.getContext("2d");
-let MP=null,landmarker=null,stream=null,generation=0,timer=null,running=false,calBusy=false,paused=false;
-let currentStep=0,calSamples={},calModel=null,savedCalib=readJSON("faceai.calibration",null),loopToken=0;
-let lastVideoTime=-1,lastTs=0,lastResult=null,lastTick=0,errorLogged=false;
-let smoothed=null,dominant="neutral",heroKey="";
-let emoTime={},sessionStart=0,emoLog=[],timeline=[],lastLogAt=0,lastTlDraw=0,lastStatsDraw=0;
-let blinks=0,blinkTimes=[],eyesClosed=false,closedAt=0,pose={yaw:0,pitch:0,roll:0},fpsFrames=0,fpsAt=0,detectMs=0;
-const poseOK={yaw:60,pitch:40,roll:40};
-let meshIndex=Math.max(0,MESH_MODES.findIndex(m=>m[0]===settings.meshMode));
-
-function resetSession(){
- emoTime=Object.fromEntries(emotionOrder.map(k=>[k,0]));sessionStart=performance.now();
- emoLog=[];timeline=[];blinks=0;blinkTimes=[];smoothed=null;dominant="neutral";heroKey="";
- updateMetrics();renderStats(true);drawTimeline(true);
-}
-
-async function loadModel(){
- if(landmarker)return;
- calStatus("Загружаем MediaPipe Face Landmarker…");
- MP=MP||await import(MP_URL);
- const vision=await MP.FilesetResolver.forVisionTasks(MP_URL+"/wasm");
- const opts={baseOptions:{modelAssetPath:LANDMARKER_MODEL,delegate:"GPU"},runningMode:"VIDEO",numFaces:1,outputFaceBlendshapes:true,outputFacialTransformationMatrixes:true,
-  minFaceDetectionConfidence:.35,minFacePresenceConfidence:.35,minTrackingConfidence:.35};
- try{landmarker=await MP.FaceLandmarker.createFromOptions(vision,opts)}
- catch(e){console.warn("GPU не запустился, пробуем CPU",e);opts.baseOptions.delegate="CPU";landmarker=await MP.FaceLandmarker.createFromOptions(vision,opts)}
-}
-function detect(el){const ts=Math.max(performance.now(),lastTs+1);lastTs=ts;return landmarker.detectForVideo(el,ts)}
-function blendshapeMap(result){const out={};for(const c of result.faceBlendshapes?.[0]?.categories||[])out[c.categoryName]=c.score;return out}
-
-async function bindStream(){
- calVideo.srcObject=stream;video.srcObject=stream;
- await Promise.all([waitVideo(calVideo),waitVideo(video)]);
- await Promise.all([calVideo.play(),video.play()]);
- if(video.videoWidth&&video.videoHeight)$("stage").style.aspectRatio=`${video.videoWidth} / ${video.videoHeight}`;
-}
-
-async function startEmotion(){
- const id=++generation;$("startEmotion").disabled=true;show("calibration");setPill("Запуск…","busy");
- $("calStep").textContent="Подготовка";$("calEmoji").textContent="📷";$("calTitle").textContent="Подключение камеры";$("calDescription").textContent="Разреши доступ к камере.";
- $("calBack").hidden=true;$("calSkip").hidden=true;$("useSaved").hidden=true;$("next").disabled=true;$("progressFill").style.width="0%";calStatus("Открываем камеру…");
- try{
-  stream=await getStream();if(id!==generation){stopStream(stream);return}
-  await bindStream();if(id!==generation)return;
-  $("calEmoji").textContent="🧠";$("calTitle").textContent="Загрузка AI";$("calDescription").textContent="Загружаем модель лица и сетки.";
-  await loadModel();if(id!==generation)return;
-  currentStep=0;calSamples={};beginStep();
- }catch(e){
-  console.error(e);stopAll();toast("Не удалось запустить: "+e.message,"error",6000);setPill("Ошибка запуска","error");
- }finally{$("startEmotion").disabled=false}
-}
-
-/* ── Калибровка ── */
-function updateSteps(index){[...$("steps").children].forEach((el,i)=>el.className="step"+(i<index?" done":i===index?" current":""))}
-function beginStep(){
- if(currentStep>=steps.length){finishCalibration(false);return}
- const s=steps[currentStep];
- $("calStep").textContent=`Этап ${currentStep+1} из ${steps.length}`;$("calEmoji").textContent=s.emoji;
- $("calTitle").textContent=s.title;$("calDescription").textContent=s.description;
- $("progressFill").style.width="0%";$("next").disabled=true;
- $("next").textContent=currentStep===steps.length-1?"Завершить ✓":"Далее →";
- $("calBack").hidden=currentStep===0;$("calSkip").hidden=currentStep===0;
- $("useSaved").hidden=!(savedCalib&&currentStep===0);
- updateSteps(currentStep);calStatus("Ищем лицо…");setPill("Калибровка","busy");checkFace(generation);
-}
-function checkFace(id){
- clearTimeout(timer);
- if(id!==generation||!stream||!landmarker||currentScreen()!=="calibration")return;
- try{
-  const found=!!detect(calVideo).faceLandmarks?.length;
-  if(found){$("next").disabled=false;calStatus("✓ Лицо найдено. Нажми «Далее», когда будешь готов.");$("progressFill").style.width="100%"}
-  else{$("next").disabled=true;calStatus("Лицо не найдено — смотри прямо в камеру.");$("progressFill").style.width="0%"}
- }catch(e){console.error(e);calStatus("Ошибка анализа. Подробности в консоли (F12).");$("next").disabled=true}
- timer=setTimeout(()=>checkFace(id),350);
-}
-async function nextStep(){
- if(!stream||!landmarker||$("next").disabled||calBusy)return;
- calBusy=true;const id=generation;$("next").disabled=true;calStatus("Сохраняем образец…");
- try{
-  const collected=[];
-  for(let i=0;i<8;i++){
-   if(id!==generation||!stream)return;
-   const result=detect(calVideo);
-   if(result.faceLandmarks?.length)collected.push(blendshapeMap(result));
-   if(i<7)await new Promise(r=>setTimeout(r,80));
-  }
-  if(id!==generation)return;
-  if(collected.length<4){calStatus("Потеряли лицо. Посмотри в камеру и нажми «Далее» ещё раз.");$("next").disabled=false;return}
-  calSamples[steps[currentStep].key]=collected;
-  currentStep++;beginStep();
- }catch(e){console.error(e);calStatus("Не удалось сохранить образец. Попробуй ещё раз.");$("next").disabled=false}
- finally{calBusy=false}
-}
-function meanVector(samples){
- const out={},n=samples.length;
- for(const s of samples)for(const k in s)out[k]=(out[k]||0)+s[k]/n;
- return out;
-}
-/* Калибровка действительно участвует в оценке: считаем «нейтральную базу»
-   и направление каждого выражения относительно неё. */
-function buildCalibModel(protos){
- const base=protos.neutral||null,dirs={};
- for(const key of ["happy","sad","angry","surprised"]){
-  const p=protos[key];if(!p)continue;
-  const d={};let n2=0;
-  for(const k in p){const diff=p[k]-(base?.[k]||0);d[k]=diff;n2+=diff*diff}
-  if(Math.sqrt(n2)>.18)dirs[key]={d,n2,n:Math.sqrt(n2)};
- }
- return {base,dirs,protos};
-}
-function finishCalibration(fromSaved){
- clearTimeout(timer);timer=null;
- let protos;
- if(fromSaved)protos=savedCalib.protos;
- else{
-  protos={};for(const key in calSamples)protos[key]=meanVector(calSamples[key]);
-  savedCalib={ts:Date.now(),protos};writeJSON("faceai.calibration",savedCalib);
- }
- calModel=buildCalibModel(protos);
- const used=Object.keys(calModel.dirs).length+(calModel.base?1:0);
- running=true;paused=false;updatePauseUI();show("app");resetSession();
- $("calResult").textContent="✓ Калибровка завершена";
- $("calInfo").textContent=`Учтено выражений: ${used} из ${steps.length}${fromSaved?" (сохранённая калибровка)":""}. Данные хранятся только в этом браузере.`;
- setPill("Камера работает","live");resizeCanvas();
- loopToken++;lastVideoTime=-1;lastTick=performance.now();fpsAt=lastTick;fpsFrames=0;
- const tok=loopToken;requestAnimationFrame(()=>analysisLoop(tok));
-}
-
-/* ── Оценка выражений ── */
-function computeScores(v){
- const base=calModel?.base||null,delta={};
- for(const k in v)delta[k]=v[k]-(base?.[k]||0);
- const g=k=>Math.max(0,delta[k]||0),avg=(a,b)=>(g(a)+g(b))/2;
- const heur={
-  happy:avg("mouthSmileLeft","mouthSmileRight")*1.15+avg("cheekSquintLeft","cheekSquintRight")*.4,
-  sad:avg("mouthFrownLeft","mouthFrownRight")*1.1+g("browInnerUp")*.5+g("mouthShrugLower")*.2,
-  angry:avg("browDownLeft","browDownRight")+avg("noseSneerLeft","noseSneerRight")*.3+avg("eyeSquintLeft","eyeSquintRight")*.25,
-  surprised:g("jawOpen")*.6+avg("eyeWideLeft","eyeWideRight")*.7+g("browInnerUp")*.4+avg("browOuterUpLeft","browOuterUpRight")*.4,
-  fearful:avg("eyeWideLeft","eyeWideRight")*.6+g("browInnerUp")*.4+avg("mouthStretchLeft","mouthStretchRight")*.6,
-  disgusted:avg("noseSneerLeft","noseSneerRight")*.9+avg("mouthUpperUpLeft","mouthUpperUpRight")*.6+g("mouthShrugUpper")*.2
- };
- let nd=0;for(const k in delta)nd+=delta[k]*delta[k];nd=Math.sqrt(nd);
- const sens=settings.sensitivity/100,s={};
- for(const key in heur){
-  let val=clamp(heur[key],0,1);
-  const dir=calModel?.dirs[key];
-  if(dir){
-   let dot=0;for(const k in dir.d)dot+=(delta[k]||0)*dir.d[k];
-   const proj=dot/dir.n2,cos=dot/(nd*dir.n+1e-6);
-   const cal=clamp(proj,0,1.2)*Math.pow(clamp(cos,0,1),1.2);
-   val=.7*clamp(cal,0,1)+.3*val;
-  }
-  val=Math.max(0,val-.04)/.96*sens;
-  s[key]=clamp(val,0,1);
- }
- const top=Math.max(...Object.values(s));
- s.neutral=clamp(1-top*1.15,.03,1);
- const sum=Object.values(s).reduce((a,b)=>a+b,0)||1;
- for(const k in s)s[k]/=sum;
- return s;
-}
-
-/* ── Интерфейс показателей ── */
-const barRefs={};
-function buildBars(){
- $("emotionList").innerHTML=emotionOrder.map(k=>`<div class="emotion" style="--c:${emoColor[k]}"><div class="emotionTop"><span>${emoEmoji[k]} ${expressionNames[k]}</span><span data-pct="${k}">—%</span></div><div class="bar"><div class="fill" data-fill="${k}"></div></div></div>`).join("");
- emotionOrder.forEach(k=>{barRefs[k]={pct:document.querySelector(`[data-pct="${k}"]`),fill:document.querySelector(`[data-fill="${k}"]`),last:-1}});
- $("legend").innerHTML=emotionOrder.map(k=>`<span><i style="--c:${emoColor[k]}"></i>${expressionNames[k]}</span>`).join("");
- $("statsGrid").innerHTML=emotionOrder.map(k=>`<div class="stat" style="--c:${emoColor[k]}"><small>${emoEmoji[k]} ${expressionNames[k]}</small><b data-st="${k}">0%</b><div class="bar"><div class="fill" data-stf="${k}"></div></div></div>`).join("");
-}
-function renderScores(scores){
- const a=settings.smoothing/100;
- if(!smoothed)smoothed={...scores};
- else for(const k of emotionOrder)smoothed[k]+=(scores[k]-smoothed[k])*a;
- for(const k of emotionOrder){
-  const pct=Math.round(clamp(smoothed[k],0,1)*100),r=barRefs[k];
-  if(r.last!==pct){r.last=pct;r.pct.textContent=pct+"%";r.fill.style.width=pct+"%"}
- }
- // Гистерезис: не мигаем между близкими выражениями.
- let best=dominant;for(const k of emotionOrder)if(smoothed[k]>smoothed[best]+.04)best=k;
- dominant=best;
- const confPct=Math.round(smoothed[dominant]*100);
- if(heroKey!==dominant){
-  heroKey=dominant;$("heroEmoji").textContent=emoEmoji[dominant];$("heroName").textContent=expressionNames[dominant];
-  const he=$("heroEmoji");he.classList.add("pop");setTimeout(()=>he.classList.remove("pop"),260);
- }
- $("mainConf").textContent=`Доля выражения: ${confPct}% · оценка движений лица, не диагноз`;
-}
-function poseFrom(result){
- const m=result.facialTransformationMatrixes?.[0]?.data;if(!m||m.length<16)return null;
- const sc=[Math.hypot(m[0],m[1],m[2])||1,Math.hypot(m[4],m[5],m[6])||1,Math.hypot(m[8],m[9],m[10])||1];
- const R=(r,c)=>m[c*4+r]/sc[c],deg=180/Math.PI;
- let yaw=Math.atan2(R(0,2),R(2,2))*deg,pitch=Math.asin(clamp(-R(1,2),-1,1))*deg,roll=Math.atan2(R(1,0),R(1,1))*deg;
- if(settings.mirror){yaw=-yaw;roll=-roll}
- return {yaw,pitch,roll};
-}
-function updateMetrics(){
- for(const [k,id] of [["yaw","Yaw"],["pitch","Pitch"],["roll","Roll"]]){
-  const val=pose[k];$("pose"+id).style.left=(50+clamp(val/poseOK[k],-1,1)*46)+"%";$("pose"+id+"V").textContent=Math.round(val)+"°";
- }
- const now=performance.now();blinkTimes=blinkTimes.filter(t=>now-t<60000);
- $("blinkCount").textContent=blinks;$("blinkRate").textContent=`моргания · ${blinkTimes.length} в минуту`;
-}
-function trackEyes(v,now){
- const bl=((v.eyeBlinkLeft||0)+(v.eyeBlinkRight||0))/2;
- if(!eyesClosed&&bl>.55){eyesClosed=true;closedAt=now}
- else if(eyesClosed&&bl<.3){eyesClosed=false;if(now-closedAt<700){blinks++;blinkTimes.push(now)}}
- $("mouthOpen").textContent=Math.round(clamp(v.jawOpen||0,0,1)*100)+"%";
-}
-
-/* ── График и статистика ── */
-function drawTimeline(force){
- const c=$("timeline");if(!c||!$("app").classList.contains("active"))return;
- const dpr=Math.min(devicePixelRatio||1,2),W=c.clientWidth,H=c.clientHeight;if(!W||!H)return;
- if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr)}
- const g=c.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
- const padY=10,plotH=H-padY*2;
- g.strokeStyle=colors.line;g.lineWidth=1;g.fillStyle=colors.muted;g.font="10px Manrope,system-ui,sans-serif";
- for(const f of [0,.25,.5,.75,1]){const y=padY+plotH*(1-f);g.beginPath();g.moveTo(34,y);g.lineTo(W-8,y);g.stroke();g.fillText(Math.round(f*100)+"%",4,y+3)}
- if(timeline.length<2)return;
- const now=performance.now(),x0=34,xw=W-42;
- for(const k of emotionOrder){
-  g.beginPath();g.strokeStyle=emoColor[k];g.lineWidth=k===dominant?2.6:1.5;g.globalAlpha=k===dominant?1:.7;
-  let started=false;
-  for(const p of timeline){
-   const x=x0+(1-(now-p.t)/30000)*xw,y=padY+plotH*(1-p.s[k]);
-   if(!started){g.moveTo(x,y);started=true}else g.lineTo(x,y);
-  }
-  g.stroke();
- }
- g.globalAlpha=1;
-}
-function renderStats(force){
- const now=performance.now(),total=Object.values(emoTime).reduce((a,b)=>a+b,0);
- for(const k of emotionOrder){
-  const pct=total?Math.round(emoTime[k]/total*100):0;
-  const b=document.querySelector(`[data-st="${k}"]`),f=document.querySelector(`[data-stf="${k}"]`);
-  if(b){b.textContent=pct+"%";f.style.width=pct+"%"}
- }
- const sec=Math.floor((now-sessionStart)/1000);$("sessionTime").textContent=`${pad2(Math.floor(sec/60))}:${pad2(sec%60)}`;
-}
-function exportCsv(){
- if(!emoLog.length){toast("Пока нечего экспортировать — подожди, пока накопятся данные.");return}
- const head=["time","dominant",...emotionOrder,"yaw","pitch","roll","blinks"].join(",");
- const rows=emoLog.map(r=>[r.time,r.dominant,...emotionOrder.map(k=>r.s[k].toFixed(3)),r.yaw.toFixed(1),r.pitch.toFixed(1),r.roll.toFixed(1),r.blinks].join(","));
- download(new Blob(["\ufeff"+head+"\n"+rows.join("\n")],{type:"text/csv;charset=utf-8"}),`face-ai-${new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")}.csv`);
- toast("CSV сохранён","ok");
-}
-
-/* ── Рисование сетки ── */
-function resizeCanvas(){
- const r=canvas.getBoundingClientRect();if(!r.width||!r.height)return;
- const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
-}
-function renderMesh(c,result,W,H,ox,oy,dw,dh,force){
- c.clearRect(0,0,W,H);
- const points=result?.faceLandmarks?.[0],mode=MESH_MODES[meshIndex][0];
- if(!points||mode==="off"||!MP)return;
- const FL=MP.FaceLandmarker,op=settings.meshOpacity/100,mirror=settings.mirror;
- const xy=p=>({x:ox+(mirror?1-p.x:p.x)*dw,y:oy+p.y*dh});
- const lines=(conn,color,width)=>{
-  if(!conn)return;c.beginPath();c.strokeStyle=color;c.lineWidth=width;
-  for(const e of conn){const a=points[e.start],b=points[e.end];if(!a||!b)continue;const pa=xy(a),pb=xy(b);c.moveTo(pa.x,pa.y);c.lineTo(pb.x,pb.y)}
-  c.stroke();
- };
- c.lineCap="round";c.lineJoin="round";
- const acc=colors.rgb;
- if(mode==="full"){
-  lines(FL.FACE_LANDMARKS_TESSELATION,`rgba(${acc},${(.38*op).toFixed(3)})`,.7);
-  lines(FL.FACE_LANDMARKS_FACE_OVAL,`rgba(${acc},${op})`,2.4);
-  lines(FL.FACE_LANDMARKS_LIPS,`rgba(255,255,255,${op})`,2);
-  for(const part of [FL.FACE_LANDMARKS_LEFT_EYE,FL.FACE_LANDMARKS_RIGHT_EYE,FL.FACE_LANDMARKS_LEFT_EYEBROW,FL.FACE_LANDMARKS_RIGHT_EYEBROW])lines(part,`rgba(255,255,255,${(.9*op).toFixed(3)})`,1.6);
-  c.fillStyle=`rgba(${acc},${op})`;
-  for(let i=0;i<points.length;i+=3){const p=xy(points[i]);c.beginPath();c.arc(p.x,p.y,1.05,0,Math.PI*2);c.fill()}
- }else if(mode==="contours"){
-  lines(FL.FACE_LANDMARKS_CONTOURS,`rgba(${acc},${op})`,2);
-  lines(FL.FACE_LANDMARKS_LIPS,`rgba(255,255,255,${op})`,2);
- }else{
-  c.fillStyle=`rgba(${acc},${op})`;
-  for(const p0 of points){const p=xy(p0);c.beginPath();c.arc(p.x,p.y,1.5,0,Math.PI*2);c.fill()}
- }
- // Радужки
- c.fillStyle=`rgba(255,255,255,${op})`;
- for(const part of [FL.FACE_LANDMARKS_LEFT_IRIS,FL.FACE_LANDMARKS_RIGHT_IRIS]){
-  if(!part)continue;const idx=new Set();part.forEach(e=>{idx.add(e.start);idx.add(e.end)});
-  for(const i of idx){const p=points[i];if(!p)continue;const q=xy(p);c.beginPath();c.arc(q.x,q.y,1.6,0,Math.PI*2);c.fill()}
- }
-}
-function drawMesh(result){
- const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;
- const vw=video.videoWidth||w,vh=video.videoHeight||h,scale=Math.min(w/vw,h/vh),dw=vw*scale,dh=vh*scale;
- renderMesh(ctx,result,w,h,(w-dw)/2,(h-dh)/2,dw,dh);
-}
-
-/* ── Главный цикл анализа ── */
-function analysisLoop(tok){
- if(tok!==loopToken||!running)return;
- requestAnimationFrame(()=>analysisLoop(tok));
- if(paused||video.readyState<2||video.currentTime===lastVideoTime)return;
- lastVideoTime=video.currentTime;
- const now=performance.now(),dt=Math.min(250,now-lastTick);lastTick=now;
- try{
-  const t0=performance.now(),result=detect(video);detectMs=detectMs*.85+(performance.now()-t0)*.15;lastResult=result;
-  drawMesh(result);
-  if(result.faceLandmarks?.length){
-   const v=blendshapeMap(result);
-   renderScores(computeScores(v));
-   trackEyes(v,now);
-   const p=poseFrom(result);if(p){pose.yaw+=(p.yaw-pose.yaw)*.35;pose.pitch+=(p.pitch-pose.pitch)*.35;pose.roll+=(p.roll-pose.roll)*.35}
-   emoTime[dominant]+=dt;
-   timeline.push({t:now,s:{...smoothed}});while(timeline.length&&now-timeline[0].t>30000)timeline.shift();
-   if(now-lastLogAt>250&&emoLog.length<20000){lastLogAt=now;emoLog.push({time:new Date().toISOString(),dominant,s:{...smoothed},yaw:pose.yaw,pitch:pose.pitch,roll:pose.roll,blinks})}
-   $("faceStatus").textContent="Лицо найдено";$("meshLabel").textContent=`Сетка лица · ${result.faceLandmarks[0].length} точек`;
-   if(!errorLogged)setPill("Камера работает","live");
-  }else{
-   $("faceStatus").textContent="Поиск лица";$("meshLabel").textContent="Лицо не обнаружено — смотри прямо в камеру";
-   $("mainConf").textContent="Лицо временно не найдено — показаны последние значения";
-  }
-  if(now-lastTlDraw>120){lastTlDraw=now;drawTimeline();updateMetrics()}
-  if(now-lastStatsDraw>500){lastStatsDraw=now;renderStats()}
-  fpsFrames++;
-  if(now-fpsAt>=1000){$("fpsLabel").textContent=`${Math.round(fpsFrames*1000/(now-fpsAt))} FPS · ${Math.round(detectMs)} мс`;fpsFrames=0;fpsAt=now}
- }catch(e){
-  if(!errorLogged){console.error(e);errorLogged=true}
-  setPill("Ошибка анализа","error");
- }
-}
-function updatePauseUI(){
- $("pauseBtn").textContent=paused?"Продолжить":"Пауза";$("pauseBtn").setAttribute("aria-pressed",String(paused));$("pauseBadge").hidden=!paused;
-}
-function togglePause(){
- if(currentScreen()==="app"&&running){paused=!paused;updatePauseUI();setPill(paused?"Пауза":"Камера работает",paused?"busy":"live")}
- else if(currentScreen()==="people"&&peopleRunning){peoplePaused=!peoplePaused;updatePeoplePauseUI()}
-}
-function cycleMesh(){
- meshIndex=(meshIndex+1)%MESH_MODES.length;settings.meshMode=MESH_MODES[meshIndex][0];saveSettings();syncMeshUI();
- if(lastResult)drawMesh(lastResult);
-}
-function syncMeshUI(){
- $("meshToggle").textContent="Сетка: "+MESH_MODES[meshIndex][1];$("setMeshMode").value=settings.meshMode;
-}
-function snapshotEmotion(){
- if(!video.videoWidth){toast("Камера ещё не готова");return}
- const W=video.videoWidth,H=video.videoHeight,c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
- g.save();if(settings.mirror){g.translate(W,0);g.scale(-1,1)}g.drawImage(video,0,0,W,H);g.restore();
- renderMesh(g,lastResult,W,H,0,0,W,H);
- const fs=Math.round(W/32),label=`${emoEmoji[dominant]} ${expressionNames[dominant]} ${Math.round((smoothed?.[dominant]||0)*100)}%`;
- g.font=`700 ${fs}px Manrope,system-ui,sans-serif`;const tw=g.measureText(label).width;
- g.fillStyle="rgba(8,16,30,.6)";g.beginPath();g.roundRect?g.roundRect(fs*.6,H-fs*2.4,tw+fs*1.2,fs*1.8,fs*.9):g.rect(fs*.6,H-fs*2.4,tw+fs*1.2,fs*1.8);g.fill();
- g.fillStyle="#fff";g.textBaseline="middle";g.fillText(label,fs*1.2,H-fs*1.5);
- c.toBlob(b=>{if(b){download(b,`face-ai-${Date.now()}.png`);toast("Снимок сохранён","ok")}},"image/png");
-}
-
-function stopAll(){
- stopPeople();generation++;running=false;paused=false;calBusy=false;loopToken++;clearTimeout(timer);
- stopStream(stream);stream=null;video.srcObject=null;calVideo.srcObject=null;
- ctx.clearRect(0,0,canvas.width,canvas.height);lastResult=null;
- show("welcome");$("next").disabled=true;
-}
-
-/* ═════════════ Режим «Люди» ═════════════ */
-let faceapi=null,modelsReady=false,peopleStream=null,peopleRunning=false,peopleBusy=false,peoplePaused=false,peopleTimer=null,peopleMatcher=null;
-let people=BUILTIN.map(p=>({...p,builtin:true,descriptor:null,thumb:null,state:"pending"}));
-let tracks=[],present=new Map(),seenLog=[],greeted=new Map(),pFpsAt=0,pFrames=0,peopleLoaded=false;
-
-const STATE_TEXT={pending:"Фото загружено",ready:"Готов",missing:"Нет фото",noface:"Нет лица"};
-function renderPeople(){
- $("profileGrid").innerHTML=people.map(p=>`<div class="profile" data-state="${p.state}">
-  <div class="avatar">${p.thumb?`<img src="${esc(p.thumb)}" alt="Фото: ${esc(p.name)}">`:`<span>${esc((p.name[0]||"?").toUpperCase())}</span>`}<i class="state-dot"></i></div>
-  <div class="pname">${esc(p.name)}</div><small>${STATE_TEXT[p.state]||""}</small>
-  ${p.builtin?"":`<button class="x" data-del="${esc(p.id)}" aria-label="Удалить ${esc(p.name)}" title="Удалить">×</button>`}</div>`).join("")+
-  `<button class="profile add" id="addPersonBtn" aria-label="Добавить человека">+<small>Добавить</small></button>`;
-}
-function loadImage(url,name){
- return new Promise((resolve,reject)=>{
-  const img=new Image();img.onload=()=>resolve(img);
-  img.onerror=()=>reject(new Error(`Не найдена фотография ${name} (${url}). Проверь, что файл лежит в корне GitHub-репозитория.`));
-  img.src=`${url}?v=1`;
- });
-}
-/* ── Хранилище добавленных людей (IndexedDB) ── */
-function idb(){return new Promise((res,rej)=>{const r=indexedDB.open("faceai",1);r.onupgradeneeded=()=>r.result.createObjectStore("people",{keyPath:"id"});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
-async function dbRun(mode,fn){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction("people",mode),st=tx.objectStore("people"),req=fn(st);tx.oncomplete=()=>{db.close();res(req?.result)};tx.onerror=()=>{db.close();rej(tx.error)}})}
-const dbAll=()=>dbRun("readonly",s=>s.getAll());
-const dbPut=rec=>dbRun("readwrite",s=>s.put(rec));
-const dbDel=id=>dbRun("readwrite",s=>s.delete(id));
-const dbClear=()=>dbRun("readwrite",s=>s.clear());
-
-async function initPeople(){
- if(peopleLoaded)return;peopleLoaded=true;
- try{
-  const saved=await dbAll();
-  for(const r of saved||[])people.push({id:r.id,name:r.name,builtin:false,descriptor:new Float32Array(r.descriptor),thumb:r.thumb,state:"ready"});
- }catch(e){console.warn("IndexedDB недоступна",e)}
- await Promise.all(people.filter(p=>p.builtin).map(async p=>{
-  try{await loadImage(p.url,p.name);p.thumb=`${p.url}?v=1`}catch{p.state="missing"}
- }));
- renderPeople();
-}
-async function loadFaceApi(){if(!faceapi)faceapi=await import(FACEAPI_URL)}
-async function loadPeopleModels(){
- if(modelsReady)return;
- setPeopleStatus("Загружаем модели распознавания…");await loadFaceApi();
- await Promise.all([faceapi.nets.ssdMobilenetv1.loadFromUri(FACE_MODELS),faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODELS),faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODELS)]);
- modelsReady=true;
-}
-async function detectBest(input,minConfidence=.35){
- const all=await faceapi.detectAllFaces(input,new faceapi.SsdMobilenetv1Options({minConfidence})).withFaceLandmarks().withFaceDescriptors();
- if(!all.length)return null;
- all.sort((a,b)=>b.detection.box.area-a.detection.box.area);
- return {det:all[0],count:all.length};
-}
-function rebuildMatcher(){
- const labeled=people.filter(p=>p.descriptor).map(p=>new faceapi.LabeledFaceDescriptors(p.id,[p.descriptor]));
- peopleMatcher=labeled.length?new faceapi.FaceMatcher(labeled,settings.threshold/100):null;
-}
-async function prepareProfiles(){
- for(const p of people){
-  if(p.descriptor||p.state==="missing")continue;
-  if(p.builtin){
-   setPeopleStatus(`Изучаем фото: ${p.name}…`);
-   try{
-    const img=await loadImage(p.url,p.name),res=await detectBest(img);
-    if(!res){p.state="noface";toast(`На фото ${p.name} не найдено лицо. Нужен чёткий снимок анфас.`,"error",5500);continue}
-    p.descriptor=res.det.descriptor;p.state="ready";
-   }catch(e){p.state="missing"}
-  }
- }
- renderPeople();rebuildMatcher();
- if(!peopleMatcher)throw new Error("Нет ни одного профиля для сравнения. Добавь фото человека кнопкой «+».");
-}
-function setPeopleStatus(text,isError=false){$("peopleStatus").textContent=text;$("peopleStatus").classList.toggle("error-message",isError)}
-function updatePeoplePauseUI(){
- $("pausePeople").textContent=peoplePaused?"Продолжить":"Пауза";$("pausePeople").setAttribute("aria-pressed",String(peoplePaused));$("peoplePauseBadge").hidden=!peoplePaused;
-}
-function peopleUI(on){
- $("peopleEmpty").hidden=on;$("peopleFps").hidden=!on;
- for(const id of ["stopPeople","pausePeople","snapPeople","fsPeople"])$(id).hidden=!on;
- $("startPeople").hidden=on;$("peopleChip").textContent=on?"Камера работает":"Камера выключена";
-}
-async function startPeople(){
- if(peopleRunning)return;
- $("startPeople").disabled=true;$("peopleEmptyBtn").disabled=true;setPill("Запуск…","busy");
- try{
-  setPeopleStatus("Подготавливаем распознавание…");
-  await initPeople();await loadPeopleModels();await prepareProfiles();
-  peopleStream=await getStream();
-  const v=$("peopleVideo");v.srcObject=peopleStream;await waitVideo(v);await v.play();
-  if(v.videoWidth&&v.videoHeight)$("peopleStage").style.aspectRatio=`${v.videoWidth} / ${v.videoHeight}`;
-  peoplePaused=false;updatePeoplePauseUI();tracks=[];present.clear();
-  peopleUI(true);peopleRunning=true;pFpsAt=performance.now();pFrames=0;
-  setPeopleStatus("Камера работает — ищем знакомые лица…");setPill("Камера работает","live");
-  peopleLoop();
- }catch(e){
-  console.error(e);setPeopleStatus("Не удалось запустить распознавание: "+e.message,true);setPill("Ошибка запуска","error");stopPeople(true);
- }finally{$("startPeople").disabled=false;$("peopleEmptyBtn").disabled=false}
-}
-function stopPeople(keepStatus){
- peopleRunning=false;peopleBusy=false;clearTimeout(peopleTimer);
- stopStream(peopleStream);peopleStream=null;
- const v=$("peopleVideo");if(v)v.srcObject=null;
- const c=$("peopleOverlay");if(c)c.getContext("2d").clearRect(0,0,c.width,c.height);
- if(document.fullscreenElement)document.exitFullscreen?.().catch(()=>{});
- present.clear();renderPresent();peopleUI(false);
- if(keepStatus!==true&&currentScreen()==="people")setPeopleStatus("Камера остановлена.");
-}
-function rrect(g,x,y,w,h,r){g.beginPath();if(g.roundRect){g.roundRect(x,y,w,h,r);return}g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
-function logEvent(text){
- seenLog.unshift({t:clock(),text});if(seenLog.length>40)seenLog.pop();
- $("seenLog").innerHTML=seenLog.map(e=>`<li><b>${esc(e.text)}</b><time>${e.t}</time></li>`).join("");
-}
-function renderPresent(){
- $("peoplePresent").innerHTML=present.size?[...present.values()].map(o=>`<span class="chip">${esc(o.name)} · ${o.conf}%</span>`).join(""):`<span class="empty-hint">Пока никого</span>`;
-}
-function greet(id,name,now){
- if(!settings.voice||!("speechSynthesis" in window))return;
- if(now-(greeted.get(id)||-1e9)<60000)return;
- greeted.set(id,now);
- try{const u=new SpeechSynthesisUtterance("Привет, "+name);u.lang="ru-RU";speechSynthesis.speak(u)}catch{}
-}
-function drawPerson(g,vw,x,y,w,h,label,conf,known){
- const cx=x+w/2,cy=y+h/2;
- g.save();
- g.strokeStyle=known?colors.accent:"rgba(160,175,198,.9)";g.lineWidth=Math.max(2,vw/640*2.4);
- if(!known)g.setLineDash([10,8]);
- if(known){g.shadowColor=`rgba(${colors.rgb},.55)`;g.shadowBlur=18}
- g.beginPath();g.ellipse(cx,cy+h*.015,w*.54,h*.61,0,0,Math.PI*2);g.stroke();
- g.setLineDash([]);g.shadowBlur=0;
- const fs=known?Math.max(28,Math.min(58,w*.21)):Math.max(22,Math.min(40,w*.16));
- const name=known?label.toLocaleUpperCase("ru-RU"):"?";
- g.font=`800 ${fs}px Manrope,Inter,Arial,sans-serif`;const nw=g.measureText(name).width;
- let cw=0;const cfs=fs*.5;
- if(known){g.font=`700 ${cfs}px Manrope,Inter,Arial,sans-serif`;cw=g.measureText(conf+"%").width+fs*.4}
- const padX=Math.max(12,fs*.46),padY=Math.max(8,fs*.28),lw=nw+cw+padX*2,lh=fs+padY*2;
- const lx=clamp(cx-lw/2,3,vw-lw-3),ly=Math.max(3,y+h*.09-lh/2);
- g.fillStyle=known?colors.accent:"rgba(70,85,110,.85)";rrect(g,lx,ly,lw,lh,Math.min(12,lh/3));g.fill();
- g.fillStyle="#fff";g.textBaseline="middle";g.textAlign="left";
- g.font=`800 ${fs}px Manrope,Inter,Arial,sans-serif`;g.fillText(name,lx+padX,ly+lh/2+.5);
- if(known){g.globalAlpha=.8;g.font=`700 ${cfs}px Manrope,Inter,Arial,sans-serif`;g.fillText(conf+"%",lx+padX+nw+fs*.4,ly+lh/2+.5)}
- g.restore();
-}
-async function peopleLoop(){
- if(!peopleRunning||peopleBusy)return;
- const v=$("peopleVideo"),c=$("peopleOverlay");
- if(document.hidden||peoplePaused||v.readyState<2||!peopleMatcher){peopleTimer=setTimeout(peopleLoop,document.hidden?600:200);return}
- peopleBusy=true;const t0=performance.now();
- try{
-  const vw=v.videoWidth,vh=v.videoHeight;if(!vw||!vh)return;
-  if(c.width!==vw||c.height!==vh){c.width=vw;c.height=vh}
-  const g=c.getContext("2d");g.clearRect(0,0,vw,vh);
-  const detections=await faceapi.detectAllFaces(v,new faceapi.SsdMobilenetv1Options({minConfidence:.45})).withFaceLandmarks().withFaceDescriptors();
-  if(!peopleRunning)return;
-  const now=performance.now(),used=new Set(),seenNow=new Map();
-  for(const det of detections){
-   const m=peopleMatcher.findBestMatch(det.descriptor),box=det.detection.box,bx=box.x+box.width/2,by=box.y+box.height/2;
-   // Лёгкий трекер: голосование по последним кадрам убирает мигание подписей.
-   let tr=null,bestD=1e9;
-   for(const t of tracks){if(used.has(t))continue;const d=Math.hypot(t.cx-bx,t.cy-by);if(d<Math.max(box.width,t.w)*.8&&d<bestD){bestD=d;tr=t}}
-   if(!tr){tr={votes:[],dists:[],cx:bx,cy:by,w:box.width,last:now};tracks.push(tr)}
-   used.add(tr);Object.assign(tr,{cx:bx,cy:by,w:box.width,last:now});
-   tr.votes.push(m.label);tr.dists.push(m.distance);if(tr.votes.length>6){tr.votes.shift();tr.dists.shift()}
-   const count={};tr.votes.forEach(l=>count[l]=(count[l]||0)+1);
-   const top=Math.max(...Object.values(count));let label=m.label;
-   if(count[m.label]!==top)label=Object.keys(count).find(l=>count[l]===top);
-   const ds=tr.dists.filter((_,i)=>tr.votes[i]===label),dist=ds.reduce((a,b)=>a+b,0)/ds.length;
-   const x=settings.mirror?vw-box.x-box.width:box.x;
-   if(label==="unknown"){if(settings.showUnknown)drawPerson(g,vw,x,box.y,box.width,box.height,"?",0,false);continue}
-   const person=people.find(p=>p.id===label);if(!person)continue;
-   const conf=Math.round(clamp(1-dist,0,1)*100);
-   drawPerson(g,vw,x,box.y,box.width,box.height,person.name,conf,true);
-   const prev=seenNow.get(label);if(!prev||prev.conf<conf)seenNow.set(label,{name:person.name,conf});
-  }
-  tracks=tracks.filter(t=>now-t.last<1000);
-  for(const [id,o] of seenNow){if(!present.has(id)){logEvent(`${o.name} в кадре`);greet(id,o.name,now)}present.set(id,{...o,t:now})}
-  let changed=seenNow.size>0;
-  for(const [id,o] of present)if(now-o.t>2500){present.delete(id);logEvent(`${o.name} вне кадра`);changed=true}
-  if(changed)renderPresent();
-  setPeopleStatus(seenNow.size?`Распознано людей: ${seenNow.size}`:"Ожидание знакомых лиц…");
-  pFrames++;if(now-pFpsAt>=1000){$("peopleFps").textContent=`${Math.round(pFrames*1000/(now-pFpsAt))} FPS`;pFrames=0;pFpsAt=now}
- }catch(e){console.error(e);setPeopleStatus("Ошибка обработки кадра: "+e.message,true)}
- finally{peopleBusy=false;if(peopleRunning)peopleTimer=setTimeout(peopleLoop,Math.max(30,140-(performance.now()-t0)))}
-}
-function snapshotPeople(){
- const v=$("peopleVideo");if(!v.videoWidth)return;
- const W=v.videoWidth,H=v.videoHeight,c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
- g.save();if(settings.mirror){g.translate(W,0);g.scale(-1,1)}g.drawImage(v,0,0,W,H);g.restore();
- g.drawImage($("peopleOverlay"),0,0,W,H);
- c.toBlob(b=>{if(b){download(b,`face-ai-people-${Date.now()}.png`);toast("Снимок сохранён","ok")}},"image/png");
-}
-
-/* ── Добавление человека ── */
-let addSource=null;
-function openAdd(){
- $("addForm").reset();$("addPreview").hidden=true;addSource=null;
- $("addNote").textContent="Загрузи чёткий портрет или сними кадр с камеры. Фото не отправляется на сервер.";
- $("addFromCam").disabled=!peopleRunning;$("addFromCam").title=peopleRunning?"":"Сначала открой камеру";
- $("addDialog").showModal();$("addName").focus();
-}
-async function fileToCanvas(file){
- const url=URL.createObjectURL(file);
- try{
-  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error("Не удалось прочитать изображение."));i.src=url});
-  const max=1280,k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement("canvas");
-  c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);c.getContext("2d").drawImage(img,0,0,c.width,c.height);return c;
- }finally{URL.revokeObjectURL(url)}
-}
-function previewFrom(canvasEl){const p=$("addPreview");p.src=canvasEl.toDataURL("image/jpeg",.8);p.hidden=false}
-function makeThumb(source,box){
- const pad=.35,size=Math.max(box.width,box.height)*(1+pad),cx=box.x+box.width/2,cy=box.y+box.height/2;
- const c=document.createElement("canvas");c.width=c.height=128;
- c.getContext("2d").drawImage(source,cx-size/2,cy-size/2,size,size,0,0,128,128);
- return c.toDataURL("image/jpeg",.82);
-}
-async function submitAdd(e){
- e.preventDefault();
- const name=$("addName").value.trim();if(!name){return}
- if(people.some(p=>p.name.toLocaleLowerCase("ru-RU")===name.toLocaleLowerCase("ru-RU"))){$("addNote").textContent="Человек с таким именем уже есть.";return}
- if(!addSource){$("addNote").textContent="Выбери фото или сними кадр с камеры.";return}
- const btn=$("addSubmit");btn.disabled=true;$("addNote").textContent="Загружаем модели и ищем лицо…";
- try{
-  await loadPeopleModels();
-  const res=await detectBest(addSource);
-  if(!res){$("addNote").textContent="Лицо не найдено. Попробуй чёткий портрет анфас при хорошем свете.";return}
-  const id="u"+Date.now().toString(36),person={id,name,builtin:false,descriptor:res.det.descriptor,thumb:makeThumb(addSource,res.det.detection.box),state:"ready"};
-  people.push(person);
-  try{await dbPut({id,name,descriptor:Array.from(person.descriptor),thumb:person.thumb})}catch{toast("Не удалось сохранить на устройстве: человек доступен до перезагрузки страницы.","error",5500)}
-  rebuildMatcher();renderPeople();$("addDialog").close();
-  toast(res.count>1?`${name} добавлен(а). На фото было несколько лиц — взято самое крупное.`:`${name} добавлен(а)`,"ok");
- }catch(err){console.error(err);$("addNote").textContent="Ошибка: "+err.message}
- finally{btn.disabled=false}
-}
-
-/* ═════════════ Полноэкранный режим, клавиши, данные ═════════════ */
-function toggleFullscreen(){
- const el=currentScreen()==="people"?$("peopleStage"):$("stage");
- if(!el.requestFullscreen){toast("Этот браузер не поддерживает полноэкранный режим для видео-блока.");return}
- if(document.fullscreenElement)document.exitFullscreen();else el.requestFullscreen().catch(()=>toast("Не удалось включить полноэкранный режим"));
-}
-function openDrawer(){$("drawer").classList.add("open");$("drawer").inert=false;$("drawer").setAttribute("aria-hidden","false");$("scrim").classList.add("on");$("closeSettings").focus()}
-function closeDrawer(){$("drawer").classList.remove("open");$("drawer").inert=true;$("drawer").setAttribute("aria-hidden","true");$("scrim").classList.remove("on");$("openSettings").focus()}
-
-document.addEventListener("keydown",e=>{
- if(e.metaKey||e.ctrlKey||e.altKey)return;
- if(e.key==="Escape"){if($("drawer").classList.contains("open"))closeDrawer();return}
- const tag=e.target.tagName;if(tag==="INPUT"||tag==="SELECT"||tag==="TEXTAREA"||document.querySelector("dialog[open]"))return;
- const k=e.key.toLowerCase(),scr=currentScreen();
- if(k==="t"||k==="е")cycleTheme();
- else if(k==="?"||k==="/"||k==="h"){$("helpDialog").showModal()}
- else if(k===","||k==="б")$("drawer").classList.contains("open")?closeDrawer():openDrawer();
- else if(scr==="welcome"&&k==="1")$("startEmotion").click();
- else if(scr==="welcome"&&k==="2")$("openPeople").click();
- else if(k===" "&&(scr==="app"||scr==="people")){e.preventDefault();togglePause()}
- else if((k==="m"||k==="ь")&&scr==="app")cycleMesh();
- else if((k==="s"||k==="ы")&&scr==="app"&&running)snapshotEmotion();
- else if((k==="s"||k==="ы")&&scr==="people"&&peopleRunning)snapshotPeople();
- else if((k==="f"||k==="а")&&(scr==="app"||scr==="people"))toggleFullscreen();
- else if((k==="c"||k==="с")&&scr==="app")$("recalibrate").click();
-});
-document.addEventListener("pointermove",e=>{
- const gl=e.target.closest?.(".glass");if(!gl)return;
- const r=gl.getBoundingClientRect();gl.style.setProperty("--mx",(e.clientX-r.left)+"px");gl.style.setProperty("--my",(e.clientY-r.top)+"px");
-},{passive:true});
-
-/* ═════════════ Привязка интерфейса ═════════════ */
-function setRange(id,outId,key,fmt){
- const el=$(id);el.value=settings[key];
- const paint=()=>{el.style.setProperty("--p",((el.value-el.min)/(el.max-el.min)*100)+"%");$(outId).textContent=fmt(el.value)};
- paint();
- el.addEventListener("input",()=>{settings[key]=Number(el.value);paint();saveSettings();applyAppearance();if(key==="threshold"&&faceapi&&peopleMatcher)rebuildMatcher()});
-}
-function buildSettingsUI(){
- $("swatches").innerHTML=ACCENTS.map(([n,c])=>`<button class="swatch" style="--sw:${c}" data-color="${c}" aria-label="${n}" title="${n}" aria-pressed="false"></button>`).join("");
- $("swatches").addEventListener("click",e=>{const b=e.target.closest(".swatch");if(!b)return;settings.accent=b.dataset.color;saveSettings();applyAppearance()});
- setRange("setGlass","glassOut","glass",v=>v+"%");
- setRange("setSmoothing","smoothOut","smoothing",v=>v+"%");
- setRange("setSensitivity","sensOut","sensitivity",v=>v+"%");
- setRange("setMeshOpacity","meshOpOut","meshOpacity",v=>v+"%");
- setRange("setThreshold","thrOut","threshold",v=>(v/100).toFixed(2));
- $("setShowUnknown").checked=settings.showUnknown;$("setVoice").checked=settings.voice;
- $("setShowUnknown").addEventListener("change",e=>{settings.showUnknown=e.target.checked;saveSettings()});
- $("setVoice").addEventListener("change",e=>{
-  settings.voice=e.target.checked;saveSettings();
-  if(settings.voice){if(!("speechSynthesis" in window)){toast("Этот браузер не умеет озвучивать текст.");}else try{speechSynthesis.speak(new SpeechSynthesisUtterance(" "))}catch{}}
- });
- $("setMirror").addEventListener("change",e=>{settings.mirror=e.target.checked;saveSettings();applyAppearance()});
- $("setMeshMode").addEventListener("change",e=>{meshIndex=Math.max(0,MESH_MODES.findIndex(m=>m[0]===e.target.value));settings.meshMode=e.target.value;saveSettings();syncMeshUI();if(lastResult)drawMesh(lastResult)});
- $("camSelect").addEventListener("change",async e=>{
-  settings.deviceId=e.target.value;saveSettings();
-  if(stream||peopleStream)await switchCamera();
- });
-}
-async function switchCamera(){
- try{
-  if(peopleStream){stopStream(peopleStream);peopleStream=await getStream();const v=$("peopleVideo");v.srcObject=peopleStream;await waitVideo(v);await v.play()}
-  else if(stream){stopStream(stream);stream=await getStream();await bindStream();lastVideoTime=-1}
-  toast("Камера переключена","ok");
- }catch(e){toast("Не удалось переключить камеру: "+e.message,"error",5500)}
-}
-function toggleMirror(){settings.mirror=!settings.mirror;saveSettings();applyAppearance()}
-
-document.querySelectorAll("[data-theme-set]").forEach(b=>b.addEventListener("click",()=>setTheme(b.dataset.themeSet)));
-$("brandHome").addEventListener("click",()=>{if(currentScreen()!=="welcome")stopAll()});
-$("startEmotion").addEventListener("click",startEmotion);
-$("openPeople").addEventListener("click",()=>{show("people");setPill("Режим: люди","idle");initPeople()});
-$("backHome").addEventListener("click",()=>{stopPeople(true);show("welcome")});
-$("startPeople").addEventListener("click",startPeople);
-$("peopleEmptyBtn").addEventListener("click",startPeople);
-$("stopPeople").addEventListener("click",()=>{stopPeople();setPill("Режим: люди","idle")});
-$("pausePeople").addEventListener("click",togglePause);
-$("snapPeople").addEventListener("click",snapshotPeople);
-$("fsPeople").addEventListener("click",toggleFullscreen);
-$("mirrorPeople").addEventListener("click",toggleMirror);
-$("mirrorBtn").addEventListener("click",toggleMirror);
-$("next").addEventListener("click",nextStep);
-$("cancel").addEventListener("click",stopAll);
-$("stop").addEventListener("click",stopAll);
-$("calBack").addEventListener("click",()=>{if(currentStep===0||calBusy)return;currentStep--;delete calSamples[steps[currentStep].key];beginStep()});
-$("calSkip").addEventListener("click",()=>{if(calBusy)return;currentStep++;beginStep()});
-$("useSaved").addEventListener("click",()=>{if(savedCalib)finishCalibration(true)});
-$("recalibrate").addEventListener("click",()=>{
- running=false;loopToken++;clearTimeout(timer);currentStep=0;calSamples={};show("calibration");beginStep();
-});
-$("pauseBtn").addEventListener("click",togglePause);
-$("meshToggle").addEventListener("click",cycleMesh);
-$("snapBtn").addEventListener("click",snapshotEmotion);
-$("fsBtn").addEventListener("click",toggleFullscreen);
-$("exportCsv").addEventListener("click",exportCsv);
-$("resetStats").addEventListener("click",()=>{resetSession();toast("Статистика сессии сброшена")});
-$("clearSeen").addEventListener("click",()=>{seenLog=[];$("seenLog").innerHTML=`<li class="empty-hint">Событий пока нет</li>`});
-$("openSettings").addEventListener("click",openDrawer);
-$("closeSettings").addEventListener("click",closeDrawer);
-$("scrim").addEventListener("click",closeDrawer);
-$("openHelp").addEventListener("click",()=>$("helpDialog").showModal());
-$("helpClose").addEventListener("click",()=>$("helpDialog").close());
-$("profileGrid").addEventListener("click",async e=>{
- if(e.target.closest("#addPersonBtn")){openAdd();return}
- const del=e.target.closest("[data-del]");
- if(del){
-  const p=people.find(x=>x.id===del.dataset.del);if(!p||!confirm(`Удалить «${p.name}» из распознавания?`))return;
-  people=people.filter(x=>x.id!==p.id);try{await dbDel(p.id)}catch{}
-  if(faceapi)rebuildMatcher();renderPeople();toast(`${p.name} удалён(а)`);
- }
-});
-$("addForm").addEventListener("submit",submitAdd);
-$("addCancel").addEventListener("click",()=>$("addDialog").close());
-$("addFile").addEventListener("change",async e=>{
- const f=e.target.files?.[0];if(!f)return;
- try{addSource=await fileToCanvas(f);previewFrom(addSource);$("addNote").textContent="Фото готово. Укажи имя и нажми «Добавить».";if(!$("addName").value)$("addName").focus()}
- catch(err){addSource=null;$("addNote").textContent=err.message}
-});
-$("addFromCam").addEventListener("click",()=>{
- const v=$("peopleVideo");if(!peopleRunning||!v.videoWidth){$("addNote").textContent="Сначала открой камеру.";return}
- const c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);
- addSource=c;previewFrom(c);$("addNote").textContent="Кадр снят. Укажи имя и нажми «Добавить».";
-});
-$("resetSettings").addEventListener("click",()=>{
- settings={...DEFAULTS};saveSettings();location.reload();
-});
-$("resetData").addEventListener("click",async()=>{
- if(!confirm("Удалить сохранённую калибровку и всех добавленных людей? Это нельзя отменить."))return;
- try{localStorage.removeItem("faceai.calibration")}catch{}savedCalib=null;
- try{await dbClear()}catch{}
- people=people.filter(p=>p.builtin);if(faceapi)rebuildMatcher();renderPeople();toast("Сохранённые данные удалены","ok");
-});
-
-document.addEventListener("fullscreenchange",()=>{resizeCanvas();drawTimeline(true)});
-new ResizeObserver(()=>resizeCanvas()).observe($("stage"));
-new ResizeObserver(()=>drawTimeline(true)).observe($("timeline"));
-window.addEventListener("resize",()=>{resizeCanvas();drawTimeline(true)});
-window.addEventListener("beforeunload",()=>{generation++;running=false;peopleRunning=false;clearTimeout(timer);stopStream(stream);stopStream(peopleStream)});
-document.addEventListener("visibilitychange",()=>{if(document.hidden&&running&&!paused)setPill("Фон: анализ приостановлен","busy");else if(!document.hidden&&running&&!paused)setPill("Камера работает","live")});
-
-/* ═════════════ Запуск ═════════════ */
-buildBars();buildSettingsUI();syncMeshUI();applyAppearance();renderPeople();resetSession();
-document.body.dataset.screen="welcome";
-</script>
+  <!-- Здесь должен находиться остальной HTML, CSS и JavaScript программы. -->
 </body>
 </html>
